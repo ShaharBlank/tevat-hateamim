@@ -1,0 +1,7 @@
+.cart-animation {
+  border-radius: 50%;
+  overflow: hidden;
+  position: absolute;
+  z-index: 1000;
+  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
