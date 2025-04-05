@@ -16,7 +16,7 @@ export default function DessertsPage() {
   const [filteredDesserts, setFilteredDesserts] = useState<Dessert[]>([])
   const [categories, setCategories] = useState<string[]>([]) // Dynamically loaded categories
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null) // Default: show all
-  const [priceRange, setPriceRange] = useState([0, 0]) // Dynamically set range
+  const [priceRange, setPriceRange] = useState(0) // Control max price dynamically
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
@@ -34,9 +34,9 @@ export default function DessertsPage() {
         const uniqueCategories = Array.from(new Set(allDesserts.map((dessert) => dessert.category).filter(Boolean)))
         setCategories(uniqueCategories)
 
-        // Set dynamic price range
+        // Set dynamic max price
         const maxPrice = Math.max(...allDesserts.map((dessert) => dessert.price))
-        setPriceRange([0, maxPrice])
+        setPriceRange(maxPrice)
       } catch (error) {
         console.error("Error loading desserts:", error)
         toast({
@@ -56,7 +56,7 @@ export default function DessertsPage() {
     // Apply filters whenever filters change
     const filtered = desserts.filter((dessert) => {
       const matchesCategory = !selectedCategory || dessert.category === selectedCategory
-      const matchesPrice = dessert.price >= priceRange[0] && dessert.price <= priceRange[1]
+      const matchesPrice = dessert.price >= 0 && dessert.price <= priceRange
       const matchesTags =
         selectedTags.length === 0 ||
         selectedTags.some((tag) =>
@@ -150,15 +150,15 @@ export default function DessertsPage() {
               <div className="px-2">
                 <Slider
                   min={0}
-                  max={priceRange[1]} // Use dynamic max price
+                  max={Math.max(...desserts.map((dessert) => dessert.price))} // Dynamic max price
                   step={5}
-                  value={priceRange}
-                  onValueChange={(values) => setPriceRange(values)}
+                  value={[priceRange]} // Control max price
+                  onValueChange={(values) => setPriceRange(values[0])} // Update max price
                   className="mb-6"
                 />
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>₪{priceRange[1]}</span>
-                  <span>₪{priceRange[0]}</span>
+                  <span>₪{priceRange}</span>
+                  <span>₪0</span>
                 </div>
               </div>
 
