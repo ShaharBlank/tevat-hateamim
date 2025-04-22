@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { getDesserts, addDessert, updateDessert, deleteDessert, type Dessert } from "@/lib/db-service"
+import { getDesserts, addDessert, updateDessert, deleteDessert, getDessertCategories, addDessertCategory, deleteDessertCategory, type Dessert } from "@/lib/db-service"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,6 +30,8 @@ import { supabaseClient } from "@/lib/supabase-client"
 
 export default function AdminDesserts() {
   const [desserts, setDesserts] = useState<Dessert[]>([])
+  const [categories, setCategories] = useState<string[]>([]) // Dynamically loaded categories
+  const [newCategory, setNewCategory] = useState("") // Input for adding a new category
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -56,6 +58,7 @@ export default function AdminDesserts() {
 
   useEffect(() => {
     loadDesserts()
+    loadCategories()
   }, [])
 
   const loadDesserts = async () => {
@@ -72,6 +75,64 @@ export default function AdminDesserts() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadCategories = async () => {
+    try {
+      const fetchedCategories = await getDessertCategories()
+      setCategories(fetchedCategories)
+    } catch (error) {
+      console.error("Error loading categories:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בטעינת הקטגוריות",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "יש להזין שם קטגוריה",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      await addDessertCategory(newCategory.trim())
+      setNewCategory("")
+      await loadCategories()
+      toast({
+        title: "הקטגוריה נוספה בהצלחה",
+        description: `הקטגוריה "${newCategory}" נוספה למערכת`,
+      })
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בעת הוספת הקטגוריה",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteCategory = async (category: string) => {
+    try {
+      await deleteDessertCategory(category)
+      await loadCategories()
+      toast({
+        title: "הקטגוריה נמחקה בהצלחה",
+        description: `הקטגוריה "${category}" נמחקה מהמערכת`,
+      })
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בעת מחיקת הקטגוריה",
+        variant: "destructive",
+      })
     }
   }
 
@@ -436,6 +497,32 @@ export default function AdminDesserts() {
 
   return (
     <div className="space-y-6">
+      {/* Category Management */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="font-semibold text-lg mb-4">ניהול קטגוריות</h2>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="הזן קטגוריה חדשה"
+              dir="rtl"
+            />
+            <Button onClick={handleAddCategory}>הוסף קטגוריה</Button>
+          </div>
+          <ul className="space-y-2">
+            {categories.map((category) => (
+              <li key={category} className="flex items-center justify-between">
+                <span>{category}</span>
+                <Button variant="destructive" size="icon" onClick={() => handleDeleteCategory(category)}>
+                  <TrashIcon className="h-4 w-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">ניהול קינוחים</h2>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -450,7 +537,7 @@ export default function AdminDesserts() {
               <DialogTitle>הוספת קינוח חדש</DialogTitle>
               <DialogDescription>הזן את פרטי הקינוח החדש. לחץ על שמור כדי להוסיף אותו למערכת.</DialogDescription>
             </DialogHeader>
-            <div className="flex-1 overflow-auto pr-1"></div>
+            <div className="flex-1 overflow-auto pr-1">
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="name">שם הקינוח</Label>
@@ -524,34 +611,21 @@ export default function AdminDesserts() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="category">קטגוריה</Label>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Select
-                        value={formData.category}
-                        onValueChange={(value) => handleSelectChange("category", value)}
-                      >
-                      <SelectTrigger dir="rtl">
-                        <SelectValue placeholder="בחר קטגוריה" />
-                      </SelectTrigger>
-                      <SelectContent dir="rtl">
-                        <SelectItem value="שוקולד">שוקולד</SelectItem>
-                        <SelectItem value="פירות">פירות</SelectItem>
-                        <SelectItem value="קלאסי">קלאסי</SelectItem>
-                        <SelectItem value="ספיישל">ספיישל</SelectItem>
-                        <SelectItem value="מאפה">מאפה</SelectItem>
-                        <SelectItem value="מזרחי">מזרחי</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      id="custom-category"
-                      name="customCategory"
-                      value={formData.category}
-                      onChange={(e) => handleSelectChange("category", e.target.value)}
-                      placeholder="הזן קטגוריה חדשה"
-                      dir="rtl"
-                      className="flex-1"
-                    />
-                  </div>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => handleSelectChange("category", value)}
+                  >
+                    <SelectTrigger dir="rtl">
+                      <SelectValue placeholder="בחר קטגוריה" />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="tags">תגיות (מופרדות בפסיקים)</Label>
@@ -732,34 +806,21 @@ export default function AdminDesserts() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-category">קטגוריה</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => handleSelectChange("category", value)}
-                    >
-                    <SelectTrigger dir="rtl">
-                      <SelectValue placeholder="בחר קטגוריה" />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      <SelectItem value="שוקולד">שוקולד</SelectItem>
-                      <SelectItem value="פירות">פירות</SelectItem>
-                      <SelectItem value="קלאסי">קלאסי</SelectItem>
-                      <SelectItem value="ספיישל">ספיישל</SelectItem>
-                      <SelectItem value="מאפה">מאפה</SelectItem>
-                      <SelectItem value="מזרחי">מזרחי</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    id="custom-category"
-                    name="customCategory"
-                    value={formData.category}
-                    onChange={(e) => handleSelectChange("category", e.target.value)}
-                    placeholder="הזן קטגוריה חדשה"
-                    dir="rtl"
-                    className="flex-1"
-                  />
-                </div>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => handleSelectChange("category", value)}
+                >
+                  <SelectTrigger dir="rtl">
+                    <SelectValue placeholder="בחר קטגוריה" />
+                  </SelectTrigger>
+                  <SelectContent dir="rtl">
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-tags">תגיות (מופרדות בפסיקים)</Label>
@@ -784,7 +845,6 @@ export default function AdminDesserts() {
                 />
               </div>
             </div>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               ביטול

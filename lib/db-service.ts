@@ -193,6 +193,38 @@ export const deleteDessert = async (id: number): Promise<void> => {
   }
 }
 
+// Dessert category operations
+export const getDessertCategories = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabaseClient.from("dessert_categories").select("category")
+    if (error) throw error
+    return data.map((row) => row.category)
+  } catch (error) {
+    console.error("Error fetching dessert categories:", error)
+    return []
+  }
+}
+
+export const addDessertCategory = async (category: string): Promise<void> => {
+  try {
+    const { error } = await supabaseClient.from("dessert_categories").insert([{ category }])
+    if (error) throw error
+  } catch (error) {
+    console.error("Error adding dessert category:", error)
+    throw error
+  }
+}
+
+export const deleteDessertCategory = async (category: string): Promise<void> => {
+  try {
+    const { error } = await supabaseClient.from("dessert_categories").delete().eq("category", category)
+    if (error) throw error
+  } catch (error) {
+    console.error("Error deleting dessert category:", error)
+    throw error
+  }
+}
+
 // Order operations
 export const getOrders = async (): Promise<Order[]> => {
   try {
