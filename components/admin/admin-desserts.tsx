@@ -20,11 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogOverlay,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { v4 as uuidv4 } from "uuid"
 import { supabaseClient } from "@/lib/supabase-client"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 export default function AdminDesserts() {
   const [desserts, setDesserts] = useState<Dessert[]>([])
@@ -39,7 +41,8 @@ export default function AdminDesserts() {
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null) // Separate state for the File object
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null) // Separate state for the preview URL
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -134,10 +137,18 @@ export default function AdminDesserts() {
     }
   }
 
+  const handleImageClick = (image: string) => {
+    setSelectedImagePreview(image) // Use the preview URL for modal display
+  }
+
+  const closeImageModal = () => {
+    setSelectedImagePreview(null)
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
-      setSelectedImage(file)
+      setSelectedImageFile(file)
 
       const previewUrl = URL.createObjectURL(file)
       setImagePreview(previewUrl)
@@ -145,24 +156,24 @@ export default function AdminDesserts() {
   }
 
   const uploadImage = async (dessertName: string): Promise<string | null> => {
-    if (!selectedImage) return null
+    if (!selectedImageFile) return null // Ensure selectedImageFile is not null
 
     setIsUploading(true)
 
     try {
-      const fileExt = selectedImage.name.split(".").pop()
+      const fileExt = selectedImageFile.name.split(".").pop() // Use File.name safely
       const shortUuid = uuidv4().slice(0, 6)
       const fileName = `${shortUuid}.${fileExt}`
       const filePath = `desserts/${fileName}`
 
       const options = {
         cacheControl: "3600",
-        contentType: selectedImage.type,
+        contentType: selectedImageFile.type, // Use File.type safely
       }
 
       const { data, error: uploadError } = await supabaseClient.storage
         .from("tevat-hateamim")
-        .upload(filePath, selectedImage, options)
+        .upload(filePath, selectedImageFile, options)
 
       if (uploadError) {
         console.error("Upload error details:", uploadError)
@@ -213,7 +224,7 @@ export default function AdminDesserts() {
       available: true,
       minweight: "",
     })
-    setSelectedImage(null)
+    setSelectedImageFile(null)
     setImagePreview(null)
   }
 
@@ -287,7 +298,7 @@ export default function AdminDesserts() {
       }
 
       let imageUrl = formData.image
-      if (selectedImage) {
+      if (selectedImageFile) {
         const uploadedUrl = await uploadImage(formData.name)
         if (uploadedUrl) {
           imageUrl = uploadedUrl
@@ -316,7 +327,7 @@ export default function AdminDesserts() {
 
       setIsAddDialogOpen(false)
       resetForm()
-      setSelectedImage(null)
+      setSelectedImageFile(null)
       setImagePreview(null)
 
       toast({
@@ -367,7 +378,7 @@ export default function AdminDesserts() {
       }
 
       let imageUrl = formData.image
-      if (selectedImage) {
+      if (selectedImageFile) {
         const uploadedUrl = await uploadImage(formData.name)
         if (uploadedUrl) {
           imageUrl = uploadedUrl
@@ -390,7 +401,7 @@ export default function AdminDesserts() {
       setIsEditDialogOpen(false)
       setSelectedDessert(null)
       resetForm()
-      setSelectedImage(null)
+      setSelectedImageFile(null)
       setImagePreview(null)
 
       toast({
@@ -454,10 +465,6 @@ export default function AdminDesserts() {
   const openDeleteDialog = (dessert: Dessert) => {
     setSelectedDessert(dessert)
     setIsDeleteDialogOpen(true)
-  }
-
-  if (loading) {
-    return <div className="text-center py-6">טוען קינוחים...</div>
   }
 
   return (
@@ -643,7 +650,7 @@ export default function AdminDesserts() {
                       desserts.map((dessert) => (
                         <TableRow key={dessert.id}>
                           <TableCell>
-                            <div className="relative w-12 h-12">
+                            <div className="relative w-12 h-12 cursor-pointer" onClick={() => handleImageClick(dessert.image)}>
                               <Image
                                 src={dessert.image || "/placeholder.svg"}
                                 alt={dessert.name}
@@ -866,6 +873,35 @@ export default function AdminDesserts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal for enlarged image */}
+      {selectedImagePreview && (
+        <Dialog open={!!selectedImagePreview} onOpenChange={closeImageModal}>
+          <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-hidden" />
+          <DialogContent className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center overflow-hidden">
+            <DialogTitle>
+              <VisuallyHidden>תמונה מוגדלת של קינוח</VisuallyHidden>
+            </DialogTitle>
+            <div className="relative bg-white rounded-lg shadow-lg p-4 max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+              <div className="w-full h-full flex items-center justify-center">
+                <Image
+                  src={selectedImagePreview}
+                  alt="תמונה מוגדלת של קינוח"
+                  className="rounded-md object-contain"
+                  style={{
+                    maxWidth: "60%",
+                    maxHeight: "60%",
+                    width: "auto",
+                    height: "auto",
+                  }}
+                  width={600}
+                  height={400}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

@@ -8,11 +8,14 @@ import { useToast } from "@/components/ui/use-toast"
 import { useCart } from "@/lib/cart-context"
 import { getDesserts, type Dessert } from "@/lib/db-service"
 import { toast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 export default function FeaturedDesserts() {
   const { toast: showToast } = useToast()
   const { addItem } = useCart()
   const [featuredDesserts, setFeaturedDesserts] = useState<Dessert[]>([])
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
     const loadFeaturedDesserts = async () => {
@@ -51,6 +54,14 @@ export default function FeaturedDesserts() {
     console.log(`${dessert.name} התווסף לסל הקניות שלך.`)
   }
 
+  const handleImageClick = (image: string) => {
+    setSelectedImage(image)
+  }
+
+  const closeImageModal = () => {
+    setSelectedImage(null)
+  }
+
   return (
     <section className="py-16">
       <div className="container px-4 mx-auto">
@@ -78,16 +89,16 @@ export default function FeaturedDesserts() {
                 key={dessert.id}
                 className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
               >
-                <div className="relative h-64">
-                  <Image src={dessert.image || "/placeholder.svg"} alt={dessert.name} fill className="object-cover" />
-                  {dessert.tags.includes("חדש") && (
-                    <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">חדש</span>
-                  )}
-                  {dessert.tags.includes("רב מכר") && (
-                    <span className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
-                      הנמכר ביותר
-                    </span>
-                  )}
+                <div
+                  className="relative h-64 cursor-pointer"
+                  onClick={() => handleImageClick(dessert.image)}
+                >
+                  <Image
+                    src={dessert.image || "/placeholder.svg"}
+                    alt={dessert.name}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg">{dessert.name}</h3>
@@ -104,6 +115,37 @@ export default function FeaturedDesserts() {
             ))
           )}
         </div>
+
+        {/* Modal for enlarged image */}
+        {selectedImage && (
+          <Dialog open={!!selectedImage} onOpenChange={closeImageModal}>
+            <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-hidden" />
+            <DialogContent
+              className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center overflow-hidden"
+            >
+              <DialogTitle>
+                <VisuallyHidden>תמונה מוגדלת של קינוח</VisuallyHidden>
+              </DialogTitle>
+              <div className="relative bg-white rounded-lg shadow-lg p-4 max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">
+                  <Image
+                    src={selectedImage}
+                    alt="תמונה מוגדלת של קינוח"
+                    className="rounded-md object-contain"
+                    style={{
+                      maxWidth: "60%",
+                      maxHeight: "60%",
+                      width: "auto",
+                      height: "auto",
+                    }}
+                    width={600} // Adjusted width
+                    height={400} // Adjusted height
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         <div className="mt-12 text-center">
           <Link

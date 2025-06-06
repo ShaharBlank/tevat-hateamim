@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { useCart } from "@/lib/cart-context"
 import { Dessert, getDesserts, getDessertCategories } from "@/lib/db-service"
 import Header from "@/components/header"
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 export default function DessertsPage() {
   const [desserts, setDesserts] = useState<Dessert[]>([])
@@ -22,6 +24,7 @@ export default function DessertsPage() {
   const { toast } = useToast()
   const { addItem } = useCart()
   const [showFilters, setShowFilters] = useState(false) // Ensure showFilters state is defined
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadDesserts() {
@@ -93,6 +96,14 @@ export default function DessertsPage() {
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
+
+  const handleImageClick = (image: string) => {
+    setSelectedImage(image)
+  }
+
+  const closeImageModal = () => {
+    setSelectedImage(null)
   }
 
   if (loading) {
@@ -196,7 +207,7 @@ export default function DessertsPage() {
                   key={dessert.id}
                   className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
                 >
-                  <div className="relative h-64">
+                  <div className="relative h-64 cursor-pointer" onClick={() => handleImageClick(dessert.image)}>
                     <Image src={dessert.image || "/placeholder.svg"} alt={dessert.name} fill className="object-cover" />
                     {dessert.tags?.includes("חדש") && (
                       <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -237,6 +248,35 @@ export default function DessertsPage() {
             )}
           </div>
         </div>
+
+        {/* Modal for enlarged image */}
+        {selectedImage && (
+          <Dialog open={!!selectedImage} onOpenChange={closeImageModal}>
+            <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-hidden" />
+            <DialogContent className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center overflow-hidden">
+              <DialogTitle>
+                <VisuallyHidden>תמונה מוגדלת של קינוח</VisuallyHidden>
+              </DialogTitle>
+              <div className="relative bg-white rounded-lg shadow-lg p-4 max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">
+                  <Image
+                    src={selectedImage}
+                    alt="תמונה מוגדלת של קינוח"
+                    className="rounded-md object-contain"
+                    style={{
+                      maxWidth: "60%",
+                      maxHeight: "60%",
+                      width: "auto",
+                      height: "auto",
+                    }}
+                    width={600}
+                    height={400}
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </main>
     </div>
   )
