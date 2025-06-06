@@ -20,6 +20,8 @@ import Header from "@/components/header"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils" // Utility for conditional class names
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover" // Import Popover components
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export default function CartPage() {
   const { items, updateQuantity, updateWeight, removeItem, getTotal, updateDeliveryDate, clearCart } = useCart()
@@ -37,11 +39,13 @@ export default function CartPage() {
   const [openPopoverId, setOpenPopoverId] = useState<number | null>(null)
   const [useProfileData, setUseProfileData] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [deliveryOption, setDeliveryOption] = useState<"pickup" | "delivery">("pickup"); // Add state for delivery option
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // State for selected image
 
   const subtotal = getTotal()
-  const shipping = 30
+  const shipping = deliveryOption === "delivery" ? 50 : 0; // Update shipping cost based on delivery option
   const tax = subtotal * 0.18
-  const total = subtotal + shipping + tax
+  const total = subtotal + shipping + tax // Recalculate total
 
   useEffect(() => {
     // Load user profile data if available
@@ -90,18 +94,31 @@ export default function CartPage() {
   }
 
   const handleUseProfileData = () => {
-    if (!user) return
+    if (!user) return;
 
-    setUseProfileData(!useProfileData)
+    setUseProfileData(!useProfileData);
 
     if (!useProfileData) {
       // Fill in data from profile
-      setName(user.name || "")
-      setEmail(user.email || "")
-      setPhone(user.phone || localStorage.getItem("userPhone") || "")
-      setAddress(user.address || localStorage.getItem("userAddress") || "")
+      setName(user.name || "");
+      setEmail(user.email || "");
+      setPhone(user.phone || localStorage.getItem("userPhone") || "");
+      setAddress(user.address || localStorage.getItem("userAddress") || "");
+    } else {
+      // Allow editing again by clearing the fields
+      setName("");
+      setEmail("");
+      setPhone("");
+      setAddress("");
     }
   }
+
+  const handleDeliveryOptionChange = (option: "pickup" | "delivery") => {
+    setDeliveryOption(option);
+    if (option === "pickup") {
+      setAddress(""); // Clear address for pickup
+    }
+  };
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
@@ -116,7 +133,9 @@ export default function CartPage() {
     if (!name.trim()) errors.name = "שם הוא שדה חובה"
     if (!email.trim()) errors.email = "אימייל הוא שדה חובה"
     if (!phone.trim()) errors.phone = "טלפון הוא שדה חובה"
-    if (!address.trim()) errors.address = "כתובת היא שדה חובה"
+    if (deliveryOption === "delivery" && !address.trim()) {
+      errors.address = "כתובת היא שדה חובה למשלוח"
+    }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -268,6 +287,14 @@ export default function CartPage() {
     return date < today || disabledDates.includes(formattedDate) // Disable past dates and specific disabled dates
   }
 
+  const handleImageClick = (image: string) => {
+    setSelectedImage(image);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
+
   return (
     <div className="flex flex-col min-h-screen" dir="rtl">
       <Header />
@@ -286,19 +313,22 @@ export default function CartPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"> {/* Reduced gap */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">פריטים בסל</h2>
+                <div className="p-4"> {/* Reduced padding */}
+                  <h2 className="text-xl font-semibold mb-3">פריטים בסל</h2> {/* Reduced margin */}
                   <div className="divide-y">
                     {items.map((item) => {
-                      const dessert = dessertsMap[item.id] // Get the full Dessert object
-                      const disabledDates = getDisabledDates(dessert)
+                      const dessert = dessertsMap[item.id]; // Get the full Dessert object
+                      const disabledDates = getDisabledDates(dessert);
 
                       return (
-                        <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-4">
-                          <div className="relative w-24 h-24 flex-shrink-0">
+                        <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6"> {/* Increased gap */}
+                          <div
+                            className="relative w-40 h-42 flex-shrink-0 cursor-pointer" // Slightly increased image size
+                            onClick={() => handleImageClick(item.image || "/placeholder.svg")} // Handle image click
+                          >
                             <Image
                               src={item.image || "/placeholder.svg"}
                               alt={item.name}
@@ -307,47 +337,47 @@ export default function CartPage() {
                             />
                           </div>
                           <div className="flex-grow">
-                            <h3 className="font-semibold">{item.name}</h3>
-                            <div className="text-sm text-gray-500 mt-1">
+                            <h3 className="font-semibold text-xl">{item.name}</h3> {/* Increased font size */}
+                            <div className="text-base text-gray-500 mt-2"> {/* Increased font size */}
                               ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
                               <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
                             </div>
 
                             {/* Weight control */}
-                            <div className="mt-2 mb-2">
-                              <label className="text-sm mb-1 flex items-center">
-                                <ScaleIcon className="h-3 w-3 ml-1" />
+                            <div className="mt-3 mb-3"> {/* Increased margin */}
+                              <label className="text-base mb-2 flex items-center"> {/* Increased font size */}
+                                <ScaleIcon className="h-4 w-4 ml-2" />
                                 משקל (ק"ג): {item.weight.toFixed(1)}
                               </label>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-3"> {/* Increased gap */}
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="h-6 w-6"
+                                  className="h-8 w-8" // Increased button size
                                   onClick={() => handleWeightChange(item.id, Math.max(dessertsMap[item.id]?.minweight || 1, item.weight - 0.1))}
                                 >
-                                  <MinusIcon className="h-3 w-3" />
+                                  <MinusIcon className="h-4 w-4" />
                                 </Button>
                                 <Slider
-                                  min={dessertsMap[item.id]?.minweight || 1} // Use minweight from the fetched desserts
+                                  min={dessertsMap[item.id]?.minweight || 1}
                                   max={5}
                                   step={0.1}
                                   value={[item.weight]}
-                                  onValueChange={(value) => handleWeightChange(item.id, value[0])} // Allow slider movement
-                                  className="max-w-[100px] mx-1"
+                                  onValueChange={(value) => handleWeightChange(item.id, value[0])}
+                                  className="max-w-[120px] mx-2" // Increased slider width
                                 />
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="h-6 w-6"
+                                  className="h-8 w-8" // Increased button size
                                   onClick={() => handleWeightChange(item.id, item.weight + 0.1)}
                                 >
-                                  <PlusIcon className="h-3 w-3" />
+                                  <PlusIcon className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
 
-                            <div className="mt-2">
+                            <div className="mt-3"> {/* Increased margin */}
                               <Popover
                                 open={openPopoverId === item.id}
                                 onOpenChange={(open) => setOpenPopoverId(open ? item.id : null)}
@@ -356,19 +386,15 @@ export default function CartPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className={`h-8 text-xs flex items-center gap-1 ${
-                                      !item.deliveryDate && validationErrors.deliveryDates
-                                        ? "border-red-500 text-red-500"
-                                        : ""
-                                    }`}
+                                    className={`h-10 text-sm flex items-center gap-2 ${!item.deliveryDate && validationErrors.deliveryDates ? "border-red-500 text-red-500" : ""}`}
                                   >
-                                    <CalendarIcon className="h-3 w-3 ml-1" />
+                                    <CalendarIcon className="h-4 w-4 ml-2" />
                                     {item.deliveryDate
                                       ? format(new Date(item.deliveryDate), "dd/MM/yyyy", { locale: he })
                                       : "בחר תאריך אספקה"}
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-3" align="start" dir="rtl">
+                                <PopoverContent className="w-auto p-3" align="start" dir="rtl"> {/* Increased padding */}
                                   <div className="flex flex-col items-center">
                                     <div className="grid grid-cols-7 gap-2 mb-2 w-full text-center"> {/* Adjusted spacing and alignment */}
                                       {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((day) => (
@@ -411,6 +437,18 @@ export default function CartPage() {
                               </Popover>
                             </div>
                           </div>
+
+                          {/* Remove item button */}
+                          <div className="flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeItem(item.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <TrashIcon className="h-8 w-8" /> {/* Increased icon size */}
+                            </Button>
+                          </div>
                         </div>
                       )
                     })}
@@ -420,98 +458,88 @@ export default function CartPage() {
             </div>
 
             {/* Order summary */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">סיכום הזמנה</h2>
+            <div className="bg-white rounded-lg shadow-md p-4"> {/* Reduced padding */}
+              <h2 className="text-xl font-semibold mb-3">סיכום הזמנה</h2> {/* Reduced margin */}
               <div className="divide-y">
-                <div className="py-4 flex justify-between">
-                  <span className="text-gray-700">ס subtotal</span>
+                <div className="py-2 flex justify-between"> {/* Reduced padding */}
+                  <span className="text-gray-700">סכום ביניים</span>
                   <span className="font-semibold">₪{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="py-4 flex justify-between">
+                <div className="py-2 flex justify-between"> {/* Reduced padding */}
                   <span className="text-gray-700">משלוח</span>
-                  <span className="font-semibold">₪{shipping.toFixed(2)}</span>
+                  <span className="font-semibold">{deliveryOption === "delivery" ? "₪50.00" : "₪0.00"}</span>
                 </div>
-                <div className="py-4 flex justify-between">
+                <div className="py-2 flex justify-between"> {/* Reduced padding */}
                   <span className="text-gray-700">מע"מ (18%)</span>
                   <span className="font-semibold">₪{tax.toFixed(2)}</span>
                 </div>
-                <div className="py-4 flex justify-between font-semibold text-lg">
+                <div className="py-2 flex justify-between font-semibold text-lg"> {/* Reduced padding */}
                   <span>סה"כ לתשלום</span>
                   <span>₪{total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* User information form */}
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">פרטי המשלוח</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="mt-4"> {/* Reduced margin */}
+                <h3 className="text-lg font-semibold mb-3">פרטי המשלוח</h3> {/* Reduced margin */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3"> {/* Reduced gap */}
                   <div>
-                    <Label htmlFor="name" className="text-sm">
-                      שם מלא
-                    </Label>
+                    <Label htmlFor="name" className="text-sm">שם מלא</Label>
                     <Input
                       id="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="mt-1"
-                      disabled={isSubmitting}
+                      disabled={useProfileData || isSubmitting}
                     />
                     {validationErrors.name && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="email" className="text-sm">
-                      אימייל
-                    </Label>
+                    <Label htmlFor="email" className="text-sm">אימייל</Label>
                     <Input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="mt-1"
-                      disabled={isSubmitting}
+                      disabled={useProfileData || isSubmitting}
                     />
                     {validationErrors.email && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="phone" className="text-sm">
-                      טלפון
-                    </Label>
+                    <Label htmlFor="phone" className="text-sm">טלפון</Label>
                     <Input
                       id="phone"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="mt-1"
-                      disabled={isSubmitting}
+                      disabled={useProfileData || isSubmitting}
                     />
                     {validationErrors.phone && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="address" className="text-sm">
-                      כתובת
-                    </Label>
+                    <Label htmlFor="address" className="text-sm">כתובת</Label>
                     <Input
                       id="address"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       className="mt-1"
-                      disabled={isSubmitting}
+                      disabled={deliveryOption === "pickup" || useProfileData || isSubmitting} // Disable for pickup
                     />
-                    {validationErrors.address && (
+                    {deliveryOption === "delivery" && validationErrors.address && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.address}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <Label htmlFor="notes" className="text-sm">
-                    הערות נוספות
-                  </Label>
+                <div className="mt-3"> {/* Reduced margin */}
+                  <Label htmlFor="notes" className="text-sm">הערות נוספות</Label>
                   <Textarea
                     id="notes"
                     value={notes}
@@ -521,7 +549,7 @@ export default function CartPage() {
                   />
                 </div>
 
-                <div className="mt-4 flex items-center">
+                <div className="mt-3 flex items-center"> {/* Reduced margin */}
                   <input
                     id="useProfileData"
                     type="checkbox"
@@ -530,13 +558,39 @@ export default function CartPage() {
                     className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
                     disabled={isSubmitting}
                   />
-                  <label htmlFor="useProfileData" className="ml-2 text-sm text-gray-700">
-                    השתמש בפרטי פרופיל
+                  <label htmlFor="useProfileData" className="ml-2 text-sm text-gray-700">השתמש בפרטי פרופיל</label>
+                </div>
+              </div>
+
+              <div className="mt-4"> {/* Reduced margin */}
+                <h3 className="text-lg font-semibold mb-3">אפשרויות משלוח</h3> {/* Reduced margin */}
+                <div className="flex items-center gap-3"> {/* Reduced gap */}
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="deliveryOption"
+                      value="pickup"
+                      checked={deliveryOption === "pickup"}
+                      onChange={() => handleDeliveryOptionChange("pickup")}
+                      className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <span>איסוף עצמי</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="deliveryOption"
+                      value="delivery"
+                      checked={deliveryOption === "delivery"}
+                      onChange={() => handleDeliveryOptionChange("delivery")}
+                      className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <span>משלוח (₪50 לבאר שבע בלבד)</span>
                   </label>
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-4"> {/* Reduced margin */}
                 <Button
                   onClick={handleSubmitOrder}
                   className="w-full py-3 text-lg font-semibold rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
@@ -547,6 +601,35 @@ export default function CartPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Modal for enlarged image */}
+        {selectedImage && (
+          <Dialog open={!!selectedImage} onOpenChange={closeImageModal}>
+            <DialogOverlay className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-hidden" />
+            <DialogContent className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex items-center justify-center overflow-hidden">
+              <DialogTitle>
+                <VisuallyHidden>תמונה מוגדלת של קינוח</VisuallyHidden>
+              </DialogTitle>
+              <div className="relative bg-white rounded-lg shadow-lg p-4 max-w-[90vw] max-h-[90vh] flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">
+                  <Image
+                    src={selectedImage}
+                    alt="תמונה מוגדלת של קינוח"
+                    className="rounded-md object-contain"
+                    style={{
+                      maxWidth: "60%",
+                      maxHeight: "60%",
+                      width: "auto",
+                      height: "auto",
+                    }}
+                    width={600}
+                    height={400}
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </main>
     </div>
