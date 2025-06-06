@@ -12,6 +12,7 @@ export type Dessert = {
   tags: string[]
   available: boolean
   minweight: number | null
+  leadTime: number | null // New property for lead time
   weight?: number // Optional weight for order calculations
 }
 
@@ -96,10 +97,13 @@ export const getDesserts = async (): Promise<Dessert[]> => {
       // Try to query with all expected fields - using minweight (lowercase w)
       const { data, error } = await supabaseClient
         .from("desserts")
-        .select("id, name, description, price, image, category, tags, available, minweight")
+        .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
 
       if (error) throw error
-      return data || []
+      return (data || []).map((dessert) => ({
+        ...dessert,
+        leadTime: dessert.lead_time, // Map database column to property
+      }))
     } catch (mainError) {
       console.error("Error in main query:", mainError)
 
@@ -114,6 +118,7 @@ export const getDesserts = async (): Promise<Dessert[]> => {
       return (data || []).map((dessert) => ({
         ...dessert,
         minweight: 1, // Default minimum weight
+        leadTime: null, // Default leadTime to match Dessert type
       }))
     }
   } catch (error) {
@@ -149,15 +154,14 @@ export const getDessertsByCategory = async (category: string): Promise<Dessert[]
 // Update to handle minweight properly in addDessert
 export const addDessert = async (dessert: Omit<Dessert, "id">): Promise<Dessert> => {
   try {
-    // Ensure minweight is at least 0.1 kg
-    if (dessert.minweight === null || dessert.minweight === undefined || dessert.minweight <= 0) {
-      dessert.minweight = 0.1
-    }
-
-    const { data, error } = await supabaseClient.from("desserts").insert([dessert]).select().single()
+    const { data, error } = await supabaseClient
+      .from("desserts")
+      .insert([{ ...dessert, lead_time: dessert.leadTime }]) // Map property to database column
+      .select()
+      .single()
 
     if (error) throw error
-    return data
+    return { ...data, leadTime: data.lead_time }
   } catch (error) {
     console.error("Error adding dessert:", error)
     throw error
@@ -167,15 +171,15 @@ export const addDessert = async (dessert: Omit<Dessert, "id">): Promise<Dessert>
 // Update updateDessert to handle minweight properly
 export const updateDessert = async (id: number, dessert: Partial<Dessert>): Promise<Dessert | null> => {
   try {
-    // Ensure minweight is at least 0.1 kg
-    if (dessert.minweight !== null && dessert.minweight !== undefined && dessert.minweight <= 0) {
-      dessert.minweight = 0.1
-    }
-
-    const { data, error } = await supabaseClient.from("desserts").update(dessert).eq("id", id).select().single()
+    const { data, error } = await supabaseClient
+      .from("desserts")
+      .update({ ...dessert, lead_time: dessert.leadTime }) // Map property to database column
+      .eq("id", id)
+      .select()
+      .single()
 
     if (error) throw error
-    return data
+    return data ? { ...data, leadTime: data.lead_time } : null
   } catch (error) {
     console.error(`Error updating dessert with id ${id}:`, error)
     throw error

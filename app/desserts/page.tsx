@@ -72,7 +72,16 @@ export default function DessertsPage() {
   }, [desserts, selectedCategory, priceRange, selectedTags])
 
   // Update the handleAddToCart function to handle weight
-  const handleAddToCart = (dessert: any) => {
+  const handleAddToCart = (dessert: Dessert) => {
+    if (!dessert.available && dessert.leadTime) {
+      toast({
+        title: "לא ניתן להזמין מיד",
+        description: `ניתן להזמין קינוח זה ${dessert.leadTime} ימים מראש.`,
+        variant: "default",
+      })
+      return
+    }
+
     // Define a default weight based on minimum weight or 1kg
     const minweight = dessert.minweight || 1
 

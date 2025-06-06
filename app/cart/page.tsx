@@ -1,25 +1,25 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { format } from "date-fns"
+import { he } from "date-fns/locale"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { MinusIcon, PlusIcon, TrashIcon, CalendarIcon, TruckIcon, ScaleIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider" // Add this line to import Slider
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { CartItem, useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
-import { createOrder, getDesserts } from "@/lib/db-service"
+import { createOrder, getDesserts, Dessert } from "@/lib/db-service"
 import Header from "@/components/header"
 import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { he } from "date-fns/locale"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
+import { cn } from "@/lib/utils" // Utility for conditional class names
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover" // Import Popover components
 
 export default function CartPage() {
   const { items, updateQuantity, updateWeight, removeItem, getTotal, updateDeliveryDate, clearCart } = useCart()
@@ -27,7 +27,7 @@ export default function CartPage() {
   const { toast } = useToast()
   const router = useRouter()
 
-  const [desserts, setDesserts] = useState<Record<number, number>>({}) // Map dessert ID to minweight
+  const [dessertsMap, setDessertsMap] = useState<Record<number, Dessert>>({}) // Map dessert ID to full Dessert object
   const [name, setName] = useState(user?.name || "")
   const [email, setEmail] = useState(user?.email || "")
   const [phone, setPhone] = useState("")
@@ -58,15 +58,15 @@ export default function CartPage() {
   }, [user])
 
   useEffect(() => {
-    // Fetch desserts and map their minweight
+    // Fetch desserts and map their full objects
     const fetchDesserts = async () => {
       try {
         const fetchedDesserts = await getDesserts()
-        const dessertMinWeights = fetchedDesserts.reduce((acc, dessert) => {
-          acc[dessert.id] = dessert.minweight || 1 // Default to 1kg if minweight is not defined
+        const dessertMap = fetchedDesserts.reduce((acc, dessert) => {
+          acc[dessert.id] = dessert
           return acc
-        }, {} as Record<number, number>)
-        setDesserts(dessertMinWeights)
+        }, {} as Record<number, Dessert>)
+        setDessertsMap(dessertMap)
       } catch (error) {
         console.error("Error fetching desserts:", error)
       }
@@ -77,7 +77,7 @@ export default function CartPage() {
 
   // Handle weight change
   const handleWeightChange = (id: number, weight: number) => {
-    const minweight = desserts[id] || 1 // Default to 1kg if not found
+    const minweight = dessertsMap[id]?.minweight || 1 // Default to 1kg if not found
     const adjustedWeight = Math.max(minweight, weight) // Ensure weight is at least minweight
     updateWeight(id, adjustedWeight)
   }
@@ -238,6 +238,36 @@ export default function CartPage() {
     addToCart(item)
   }
 
+  const getDisabledDates = (dessert?: Dessert) => {
+    if (!dessert) {
+      return [] // Return an empty array if dessert is undefined
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Normalize to midnight for comparison
+
+    if (dessert.available) {
+      return [] // No disabled dates if the dessert is available
+    }
+
+    const leadTime = dessert.leadTime || 0
+    const disabledDates = []
+
+    for (let i = 0; i < leadTime; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i + 1)
+      disabledDates.push(date.toISOString().split("T")[0]) // Format as YYYY-MM-DD
+    }
+    return disabledDates
+  }
+
+  const isDateDisabled = (date: Date, disabledDates: string[]) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Normalize to midnight for comparison
+    const formattedDate = date.toISOString().split("T")[0]
+    return date < today || disabledDates.includes(formattedDate) // Disable past dates and specific disabled dates
+  }
+
   return (
     <div className="flex flex-col min-h-screen" dir="rtl">
       <Header />
@@ -262,241 +292,258 @@ export default function CartPage() {
                 <div className="p-6">
                   <h2 className="text-xl font-semibold mb-4">פריטים בסל</h2>
                   <div className="divide-y">
-                    {items.map((item) => (
-                      <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-4">
-                        <div className="relative w-24 h-24 flex-shrink-0">
-                          <Image
-                            src={item.image || "/placeholder.svg"}
-                            alt={item.name}
-                            fill
-                            className="object-cover rounded-md"
-                          />
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <div className="text-sm text-gray-500 mt-1">
-                            ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
-                            <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
-                          </div>
+                    {items.map((item) => {
+                      const dessert = dessertsMap[item.id] // Get the full Dessert object
+                      const disabledDates = getDisabledDates(dessert)
 
-                          {/* Weight control */}
-                          <div className="mt-2 mb-2">
-                            <label className="text-sm mb-1 flex items-center">
-                              <ScaleIcon className="h-3 w-3 ml-1" />
-                              משקל (ק"ג): {item.weight.toFixed(1)}
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleWeightChange(item.id, Math.max(desserts[item.id] || 1, item.weight - 0.1))}
-                              >
-                                <MinusIcon className="h-3 w-3" />
-                              </Button>
-                              <Slider
-                                min={desserts[item.id] || 1} // Use minweight from the fetched desserts
-                                max={5}
-                                step={0.1}
-                                value={[item.weight]}
-                                onValueChange={(value) => handleWeightChange(item.id, value[0])} // Allow slider movement
-                                className="max-w-[100px] mx-1"
-                              />
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleWeightChange(item.id, item.weight + 0.1)}
-                              >
-                                <PlusIcon className="h-3 w-3" />
-                              </Button>
+                      return (
+                        <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-4">
+                          <div className="relative w-24 h-24 flex-shrink-0">
+                            <Image
+                              src={item.image || "/placeholder.svg"}
+                              alt={item.name}
+                              fill
+                              className="object-cover rounded-md"
+                            />
+                          </div>
+                          <div className="flex-grow">
+                            <h3 className="font-semibold">{item.name}</h3>
+                            <div className="text-sm text-gray-500 mt-1">
+                              ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
+                              <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
                             </div>
-                          </div>
 
-                          <div className="mt-2">
-                            <Popover
-                              open={openPopoverId === item.id}
-                              onOpenChange={(open) => {
-                                setOpenPopoverId(open ? item.id : null)
-                              }}
-                            >
-                              <PopoverTrigger asChild>
+                            {/* Weight control */}
+                            <div className="mt-2 mb-2">
+                              <label className="text-sm mb-1 flex items-center">
+                                <ScaleIcon className="h-3 w-3 ml-1" />
+                                משקל (ק"ג): {item.weight.toFixed(1)}
+                              </label>
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
-                                  size="sm"
-                                  className={`h-8 text-xs flex items-center gap-1 ${
-                                    !item.deliveryDate && validationErrors.deliveryDates
-                                      ? "border-red-500 text-red-500"
-                                      : ""
-                                  }`}
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleWeightChange(item.id, Math.max(dessertsMap[item.id]?.minweight || 1, item.weight - 0.1))}
                                 >
-                                  <CalendarIcon className="h-3 w-3 ml-1" />
-                                  {item.deliveryDate
-                                    ? format(new Date(item.deliveryDate), "dd/MM/yyyy", { locale: he })
-                                    : "בחר תאריך אספקה"}
+                                  <MinusIcon className="h-3 w-3" />
                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start" dir="rtl">
-                                <Calendar
-                                  mode="single"
-                                  selected={item.deliveryDate ? new Date(item.deliveryDate) : undefined}
-                                  onSelect={(date) => handleDateSelect(item.id, date)}
-                                  disabled={(date) =>
-                                    date < new Date() || date < new Date(new Date().setDate(new Date().getDate() + 2))
-                                  }
-                                  locale={he}
+                                <Slider
+                                  min={dessertsMap[item.id]?.minweight || 1} // Use minweight from the fetched desserts
+                                  max={5}
+                                  step={0.1}
+                                  value={[item.weight]}
+                                  onValueChange={(value) => handleWeightChange(item.id, value[0])} // Allow slider movement
+                                  className="max-w-[100px] mx-1"
                                 />
-                              </PopoverContent>
-                            </Popover>
-                            {!item.deliveryDate && validationErrors.deliveryDates && (
-                              <p className="text-xs text-red-500 mt-1">יש לבחור תאריך אספקה</p>
-                            )}
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleWeightChange(item.id, item.weight + 0.1)}
+                                >
+                                  <PlusIcon className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="mt-2">
+                              <Popover
+                                open={openPopoverId === item.id}
+                                onOpenChange={(open) => setOpenPopoverId(open ? item.id : null)}
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={`h-8 text-xs flex items-center gap-1 ${
+                                      !item.deliveryDate && validationErrors.deliveryDates
+                                        ? "border-red-500 text-red-500"
+                                        : ""
+                                    }`}
+                                  >
+                                    <CalendarIcon className="h-3 w-3 ml-1" />
+                                    {item.deliveryDate
+                                      ? format(new Date(item.deliveryDate), "dd/MM/yyyy", { locale: he })
+                                      : "בחר תאריך אספקה"}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-3" align="start" dir="rtl">
+                                  <div className="flex flex-col items-center">
+                                    <div className="grid grid-cols-7 gap-2 mb-2 w-full text-center"> {/* Adjusted spacing and alignment */}
+                                      {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((day) => (
+                                        <div key={day} className="font-semibold text-sm text-gray-700">
+                                          {day}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1">
+                                      {Array.from({ length: 42 }).map((_, index) => {
+                                        const currentDate = new Date();
+                                        currentDate.setDate(currentDate.getDate() + index - currentDate.getDay());
+                                        const isDisabled = isDateDisabled(currentDate, disabledDates);
+                                        const isSelected = item.deliveryDate
+                                          ? new Date(item.deliveryDate).toDateString() === currentDate.toDateString()
+                                          : false;
+                                        const isToday = new Date().toDateString() === currentDate.toDateString();
+
+                                        return (
+                                          <button
+                                            key={index}
+                                            onClick={() => !isDisabled && handleDateSelect(item.id, currentDate)}
+                                            disabled={isDisabled}
+                                            className={cn(
+                                              "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
+                                              isDisabled || currentDate < new Date()
+                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed" // Gray for disabled or past dates
+                                                : "bg-white text-black hover:bg-primary hover:text-white",
+                                              isSelected && "bg-primary text-white",
+                                              isToday && !isSelected && "bg-accent text-accent-foreground"
+                                            )}
+                                          >
+                                            {currentDate.getDate()}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          >
-                            <MinusIcon className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <PlusIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₪{(item.price * item.weight).toFixed(2)}</p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 mt-2 h-8 px-2"
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <TrashIcon className="h-4 w-4 ml-1" />
-                            הסר
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">סיכום הזמנה</h2>
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span>סכום ביניים</span>
-                      <span>₪{subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>משלוח</span>
-                      <span>₪{shipping.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>מע"מ (18%)</span>
-                      <span>₪{tax.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t pt-4 flex justify-between font-semibold">
-                      <span>סה"כ</span>
-                      <span>₪{total.toFixed(2)}</span>
-                    </div>
-                  </div>
-                  <div className="mt-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">שם מלא</Label>
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="ישראל ישראלי"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        className={validationErrors.name ? "border-red-500" : ""}
-                        disabled={useProfileData}
-                        dir="rtl"
-                      />
-                      {validationErrors.name && <p className="text-xs text-red-500">{validationErrors.name}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">אימייל</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className={validationErrors.email ? "border-red-500" : ""}
-                        disabled={useProfileData}
-                        dir="rtl"
-                      />
-                      {validationErrors.email && <p className="text-xs text-red-500">{validationErrors.email}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">מספר טלפון</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="050-1234567"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                        className={validationErrors.phone ? "border-red-500" : ""}
-                        disabled={useProfileData}
-                        dir="rtl"
-                      />
-                      {validationErrors.phone && <p className="text-xs text-red-500">{validationErrors.phone}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">כתובת למשלוח</Label>
-                      <Textarea
-                        id="address"
-                        placeholder="רחוב, מספר בית, עיר"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        required
-                        className={validationErrors.address ? "border-red-500" : ""}
-                        disabled={useProfileData}
-                        dir="rtl"
-                      />
-                      {validationErrors.address && <p className="text-xs text-red-500">{validationErrors.address}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">הערות להזמנה</Label>
-                      <Textarea
-                        id="notes"
-                        placeholder="הערות מיוחדות להזמנה"
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        dir="rtl"
-                      />
-                    </div>
-                    <Button
-                      className="w-full mt-6 bg-primary hover:bg-primary/90"
-                      onClick={handleSubmitOrder}
+            {/* Order summary */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">סיכום הזמנה</h2>
+              <div className="divide-y">
+                <div className="py-4 flex justify-between">
+                  <span className="text-gray-700">ס subtotal</span>
+                  <span className="font-semibold">₪{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="py-4 flex justify-between">
+                  <span className="text-gray-700">משלוח</span>
+                  <span className="font-semibold">₪{shipping.toFixed(2)}</span>
+                </div>
+                <div className="py-4 flex justify-between">
+                  <span className="text-gray-700">מע"מ (18%)</span>
+                  <span className="font-semibold">₪{tax.toFixed(2)}</span>
+                </div>
+                <div className="py-4 flex justify-between font-semibold text-lg">
+                  <span>סה"כ לתשלום</span>
+                  <span>₪{total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* User information form */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">פרטי המשלוח</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name" className="text-sm">
+                      שם מלא
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="mt-1"
                       disabled={isSubmitting}
-                    >
-                      {isSubmitting ? "שולח הזמנה..." : "שלח הזמנה"}
-                    </Button>
-                    <div className="mt-4 text-center">
-                      <Link href="/desserts" className="text-sm text-primary hover:underline">
-                        המשך בקניות
-                      </Link>
-                    </div>
+                    />
+                    {validationErrors.name && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-sm">
+                      אימייל
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="mt-1"
+                      disabled={isSubmitting}
+                    />
+                    {validationErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-sm">
+                      טלפון
+                    </Label>
+                    <Input
+                      id="phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="mt-1"
+                      disabled={isSubmitting}
+                    />
+                    {validationErrors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="address" className="text-sm">
+                      כתובת
+                    </Label>
+                    <Input
+                      id="address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="mt-1"
+                      disabled={isSubmitting}
+                    />
+                    {validationErrors.address && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.address}</p>
+                    )}
                   </div>
                 </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="notes" className="text-sm">
+                    הערות נוספות
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="mt-1"
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                <div className="mt-4 flex items-center">
+                  <input
+                    id="useProfileData"
+                    type="checkbox"
+                    checked={useProfileData}
+                    onChange={handleUseProfileData}
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    disabled={isSubmitting}
+                  />
+                  <label htmlFor="useProfileData" className="ml-2 text-sm text-gray-700">
+                    השתמש בפרטי פרופיל
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <Button
+                  onClick={handleSubmitOrder}
+                  className="w-full py-3 text-lg font-semibold rounded-md bg-primary text-white hover:bg-primary/90 transition-colors"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "שולח הזמנה..." : "שלח הזמנה"}
+                </Button>
               </div>
             </div>
           </div>
@@ -504,19 +551,5 @@ export default function CartPage() {
       </main>
     </div>
   )
-}
-function addToCart(item: CartItem) {
-  const { items, updateQuantity } = useCart();
-
-  // Check if the item already exists in the cart
-  const existingItem = items.find((cartItem) => cartItem.id === item.id);
-
-  if (existingItem) {
-    // If the item exists, increase its quantity by 1
-    updateQuantity(item.id, existingItem.quantity + 1);
-  } else {
-    // If the item doesn't exist, add it to the cart with a default quantity of 1
-    updateQuantity(item.id, 1);
-  }
 }
 

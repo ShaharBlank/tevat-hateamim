@@ -55,6 +55,7 @@ export default function AdminDesserts() {
     tags: "",
     available: true,
     minweight: "",
+    leadTime: "", // New property for lead time
   })
 
   useEffect(() => {
@@ -223,6 +224,7 @@ export default function AdminDesserts() {
       tags: "",
       available: true,
       minweight: "",
+      leadTime: "", // Reset lead time
     })
     setSelectedImageFile(null)
     setImagePreview(null)
@@ -230,6 +232,17 @@ export default function AdminDesserts() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+
+    // Prevent negative values for leadTime
+    if (name === "leadTime" && Number(value) <= 0) {
+      toast({
+        title: "שגיאה",
+        description: "זמן ההזמנה מראש לא יכול להיות שלילי",
+        variant: "destructive",
+      })
+      return
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -297,6 +310,16 @@ export default function AdminDesserts() {
         return
       }
 
+      const leadTime = formData.leadTime ? Number.parseInt(formData.leadTime) : null
+      if (leadTime !== null && isNaN(leadTime)) {
+        toast({
+          title: "שגיאה",
+          description: "זמן ההזמנה המוקדם חייב להיות מספר שלם חיובי או ריק",
+          variant: "destructive",
+        })
+        return
+      }
+
       let imageUrl = formData.image
       if (selectedImageFile) {
         const uploadedUrl = await uploadImage(formData.name)
@@ -321,6 +344,7 @@ export default function AdminDesserts() {
         tags: formData.tags.split(",").map((tag) => tag.trim()),
         available: formData.available,
         minweight: minweight,
+        leadTime: leadTime,
       })
 
       await loadDesserts()
@@ -377,6 +401,16 @@ export default function AdminDesserts() {
         return
       }
 
+      const leadTime = formData.leadTime ? Number.parseInt(formData.leadTime) : null
+      if (leadTime !== null && isNaN(leadTime)) {
+        toast({
+          title: "שגיאה",
+          description: "זמן ההזמנה המוקדם חייב להיות מספר שלם חיובי או ריק",
+          variant: "destructive",
+        })
+        return
+      }
+
       let imageUrl = formData.image
       if (selectedImageFile) {
         const uploadedUrl = await uploadImage(formData.name)
@@ -394,6 +428,7 @@ export default function AdminDesserts() {
         tags: formData.tags.split(",").map((tag) => tag.trim()),
         available: formData.available,
         minweight: minweight,
+        leadTime: leadTime,
       })
 
       await loadDesserts()
@@ -457,6 +492,7 @@ export default function AdminDesserts() {
       tags: dessert.tags.join(", "),
       available: dessert.available,
       minweight: dessert.minweight ? dessert.minweight.toString() : "",
+      leadTime: dessert.leadTime ? dessert.leadTime.toString() : "",
     })
     setImagePreview(dessert.image)
     setIsEditDialogOpen(true)
@@ -545,6 +581,21 @@ export default function AdminDesserts() {
                           dir="rtl"
                         />
                         <p className="text-xs text-muted-foreground text-right">השאר ריק אם אין הגבלת משקל מינימלי</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="leadTime">זמן הזמנה מראש (ימים)</Label>
+                        <Input
+                          id="leadTime"
+                          name="leadTime"
+                          type="number"
+                          value={formData.leadTime}
+                          onChange={handleInputChange}
+                          placeholder="הזן מספר ימים"
+                          dir="rtl"
+                        />
+                        <p className="text-xs text-muted-foreground text-right">
+                          הזמן המינימלי להזמנה מראש אם הקינוח לא זמין במלאי
+                        </p>
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="image">תמונה</Label>
@@ -780,6 +831,21 @@ export default function AdminDesserts() {
                   dir="rtl"
                 />
                 <p className="text-xs text-muted-foreground text-right">השאר ריק אם אין הגבלת משקל מינימלי</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-leadTime">זמן הזמנה מראש (ימים)</Label>
+                <Input
+                  id="edit-leadTime"
+                  name="leadTime"
+                  type="number"
+                  value={formData.leadTime}
+                  onChange={handleInputChange}
+                  placeholder="הזן מספר ימים"
+                  dir="rtl"
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  הזמן המינימלי להזמנה מראש אם הקינוח לא זמין במלאי
+                </p>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-image">תמונה</Label>
