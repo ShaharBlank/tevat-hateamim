@@ -228,7 +228,7 @@ export default function AdminOrders() {
               <TableRow>
                 <TableHead>מספר הזמנה</TableHead>
                 <TableHead>לקוח</TableHead>
-                <TableHead>תאריך</TableHead>
+                <TableHead>תאריך אספקה</TableHead> {/* Add delivery date column */}
                 <TableHead>סכום</TableHead>
                 <TableHead>סטטוס</TableHead>
                 <TableHead>פעולות</TableHead>
@@ -246,7 +246,7 @@ export default function AdminOrders() {
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">#{order.orderNumber || order.id.substring(0, 8)}</TableCell>
                     <TableCell>{order.username}</TableCell>
-                    <TableCell>{format(new Date(order.createdat), "dd/MM/yyyy", { locale: he })}</TableCell>
+                    <TableCell>{order.deliveryDate ? format(new Date(order.deliveryDate), "dd/MM/yyyy", { locale: he }) : "-"}</TableCell> {/* Display delivery date */}
                     <TableCell>₪{order.total.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>

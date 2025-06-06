@@ -6,7 +6,7 @@ import { he } from "date-fns/locale"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { MinusIcon, PlusIcon, TrashIcon, CalendarIcon, TruckIcon, ScaleIcon } from "lucide-react"
+import { MinusIcon, PlusIcon, TrashIcon, CalendarIcon, TruckIcon, ScaleIcon, Bold } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider" // Add this line to import Slider
 import { Input } from "@/components/ui/input"
@@ -41,6 +41,7 @@ export default function CartPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [deliveryOption, setDeliveryOption] = useState<"pickup" | "delivery">("pickup"); // Add state for delivery option
   const [selectedImage, setSelectedImage] = useState<string | null>(null); // State for selected image
+  const [deliveryDate, setDeliveryDate] = useState<string | null>(null); // State for the single delivery date
 
   const subtotal = getTotal()
   const shipping = deliveryOption === "delivery" ? 50 : 0; // Update shipping cost based on delivery option
@@ -86,10 +87,10 @@ export default function CartPage() {
     updateWeight(id, adjustedWeight)
   }
 
-  const handleDateSelect = (id: number, date: Date | undefined) => {
+  const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      updateDeliveryDate(id, date.toISOString())
-      setOpenPopoverId(null) // Close the popover after date selection
+      setDeliveryDate(date.toISOString()); // Set the single delivery date
+      setOpenPopoverId(null); // Close the popover after date selection
     }
   }
 
@@ -121,51 +122,50 @@ export default function CartPage() {
   };
 
   const validateForm = () => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
 
-    // Check if all items have delivery dates
-    const missingDates = items.some((item) => !item.deliveryDate)
-    if (missingDates) {
-      errors.deliveryDates = "יש לבחור תאריך אספקה לכל המוצרים"
+    // Check if a delivery date is selected
+    if (!deliveryDate) {
+      errors.deliveryDates = "יש לבחור תאריך אספקה להזמנה";
     }
 
     // Validate required fields
-    if (!name.trim()) errors.name = "שם הוא שדה חובה"
-    if (!email.trim()) errors.email = "אימייל הוא שדה חובה"
-    if (!phone.trim()) errors.phone = "טלפון הוא שדה חובה"
+    if (!name.trim()) errors.name = "שם הוא שדה חובה";
+    if (!email.trim()) errors.email = "אימייל הוא שדה חובה";
+    if (!phone.trim()) errors.phone = "טלפון הוא שדה חובה";
     if (deliveryOption === "delivery" && !address.trim()) {
-      errors.address = "כתובת היא שדה חובה למשלוח"
+      errors.address = "כתובת היא שדה חובה למשלוח";
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (email && !emailRegex.test(email)) {
-      errors.email = "אנא הזן כתובת אימייל תקינה"
+      errors.email = "אנא הזן כתובת אימייל תקינה";
     }
 
     // Validate phone format (Israeli phone number)
-    const phoneRegex = /^0(5[0-9]|[2-4]|[8-9]|7[0-9])-?[0-9]{7}$/
+    const phoneRegex = /^0(5[0-9]|[2-4]|[8-9]|7[0-9])-?[0-9]{7}$/;
     if (phone && !phoneRegex.test(phone.replace(/-/g, ""))) {
-      errors.phone = "אנא הזן מספר טלפון תקין"
+      errors.phone = "אנא הזן מספר טלפון תקין";
     }
 
-    setValidationErrors(errors)
-    return Object.keys(errors).length === 0
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   const handleSubmitOrder = async () => {
     if (!validateForm()) {
       // Show toast with the first error
-      const firstError = Object.values(validationErrors)[0]
+      const firstError = Object.values(validationErrors)[0];
       toast({
         title: "שגיאה בטופס",
         description: firstError,
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // Create order
@@ -179,31 +179,32 @@ export default function CartPage() {
         total,
         shipping,
         notes,
-      })
+        deliveryDate: deliveryDate || "", // Ensure deliveryDate is a string
+      });
 
       // Save user data for future use if logged in
       if (user) {
-        localStorage.setItem("userPhone", phone)
-        localStorage.setItem("userAddress", address)
+        localStorage.setItem("userPhone", phone);
+        localStorage.setItem("userAddress", address);
       }
 
       toast({
         title: "ההזמנה נשלחה בהצלחה",
         description: `מספר הזמנה: ${order.orderNumber}. נעדכן אותך כשההזמנה תאושר`,
-      })
+      });
 
       // Clear cart and redirect to orders page
-      clearCart()
-      router.push("/orders")
+      clearCart();
+      router.push("/orders");
     } catch (error) {
-      console.error("Error submitting order:", error)
+      console.error("Error submitting order:", error);
       toast({
         title: "שגיאה",
         description: "אירעה שגיאה בעת שליחת ההזמנה",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
@@ -280,11 +281,22 @@ export default function CartPage() {
     return disabledDates
   }
 
-  const isDateDisabled = (date: Date, disabledDates: string[]) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Normalize to midnight for comparison
-    const formattedDate = date.toISOString().split("T")[0]
-    return date < today || disabledDates.includes(formattedDate) // Disable past dates and specific disabled dates
+  const getMaxLeadTime = () => {
+    return items.reduce((max, item) => {
+      const dessert = dessertsMap[item.id];
+      return dessert?.leadTime && dessert.leadTime > max ? dessert.leadTime : max;
+    }, 0);
+  };
+
+  const isDateDisabled = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to midnight for comparison
+
+    const maxLeadTime = getMaxLeadTime();
+    const leadTimeLimit = new Date(today);
+    leadTimeLimit.setDate(today.getDate() + maxLeadTime);
+
+    return date < today || date > leadTimeLimit; // Disable past dates and dates beyond the max lead time
   }
 
   const handleImageClick = (image: string) => {
@@ -321,13 +333,12 @@ export default function CartPage() {
                   <div className="divide-y">
                     {items.map((item) => {
                       const dessert = dessertsMap[item.id]; // Get the full Dessert object
-                      const disabledDates = getDisabledDates(dessert);
-
+                      console.log(dessert);
                       return (
-                        <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6"> {/* Increased gap */}
+                        <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6">
                           <div
-                            className="relative w-40 h-42 flex-shrink-0 cursor-pointer" // Slightly increased image size
-                            onClick={() => handleImageClick(item.image || "/placeholder.svg")} // Handle image click
+                            className="relative w-40 h-42 flex-shrink-0 cursor-pointer"
+                            onClick={() => handleImageClick(item.image || "/placeholder.svg")}
                           >
                             <Image
                               src={item.image || "/placeholder.svg"}
@@ -337,23 +348,27 @@ export default function CartPage() {
                             />
                           </div>
                           <div className="flex-grow">
-                            <h3 className="font-semibold text-xl">{item.name}</h3> {/* Increased font size */}
-                            <div className="text-base text-gray-500 mt-2"> {/* Increased font size */}
+                            <h3 className="font-semibold text-xl">{item.name}</h3>
+                            <div className="text-base text-gray-500 mt-2">
                               ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
                               <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
-                            </div>
-
+                            </div>                            
+                            {dessert.leadTime != null && dessert.leadTime > 0 && (
+                              <p className="text-base text-gray-500 mt-1"> {/* Changed to text-base */}
+                                ימי הזמנה מראש: <b>{dessert.leadTime}</b>
+                              </p>
+                            )}
                             {/* Weight control */}
-                            <div className="mt-3 mb-3"> {/* Increased margin */}
-                              <label className="text-base mb-2 flex items-center"> {/* Increased font size */}
+                            <div className="mt-3 mb-3">
+                              <label className="text-base mb-2 flex items-center">
                                 <ScaleIcon className="h-4 w-4 ml-2" />
                                 משקל (ק"ג): {item.weight.toFixed(1)}
                               </label>
-                              <div className="flex items-center gap-3"> {/* Increased gap */}
+                              <div className="flex items-center gap-3">
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="h-8 w-8" // Increased button size
+                                  className="h-8 w-8"
                                   onClick={() => handleWeightChange(item.id, Math.max(dessertsMap[item.id]?.minweight || 1, item.weight - 0.1))}
                                 >
                                   <MinusIcon className="h-4 w-4" />
@@ -364,89 +379,30 @@ export default function CartPage() {
                                   step={0.1}
                                   value={[item.weight]}
                                   onValueChange={(value) => handleWeightChange(item.id, value[0])}
-                                  className="max-w-[120px] mx-2" // Increased slider width
+                                  className="max-w-[120px] mx-2"
                                 />
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="h-8 w-8" // Increased button size
+                                  className="h-8 w-8"
                                   onClick={() => handleWeightChange(item.id, item.weight + 0.1)}
                                 >
                                   <PlusIcon className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
-
-                            <div className="mt-3"> {/* Increased margin */}
-                              <Popover
-                                open={openPopoverId === item.id}
-                                onOpenChange={(open) => setOpenPopoverId(open ? item.id : null)}
-                              >
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className={`h-10 text-sm flex items-center gap-2 ${!item.deliveryDate && validationErrors.deliveryDates ? "border-red-500 text-red-500" : ""}`}
-                                  >
-                                    <CalendarIcon className="h-4 w-4 ml-2" />
-                                    {item.deliveryDate
-                                      ? format(new Date(item.deliveryDate), "dd/MM/yyyy", { locale: he })
-                                      : "בחר תאריך אספקה"}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-3" align="start" dir="rtl"> {/* Increased padding */}
-                                  <div className="flex flex-col items-center">
-                                    <div className="grid grid-cols-7 gap-2 mb-2 w-full text-center"> {/* Adjusted spacing and alignment */}
-                                      {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((day) => (
-                                        <div key={day} className="font-semibold text-sm text-gray-700">
-                                          {day}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-1">
-                                      {Array.from({ length: 42 }).map((_, index) => {
-                                        const currentDate = new Date();
-                                        currentDate.setDate(currentDate.getDate() + index - currentDate.getDay());
-                                        const isDisabled = isDateDisabled(currentDate, disabledDates);
-                                        const isSelected = item.deliveryDate
-                                          ? new Date(item.deliveryDate).toDateString() === currentDate.toDateString()
-                                          : false;
-                                        const isToday = new Date().toDateString() === currentDate.toDateString();
-
-                                        return (
-                                          <button
-                                            key={index}
-                                            onClick={() => !isDisabled && handleDateSelect(item.id, currentDate)}
-                                            disabled={isDisabled}
-                                            className={cn(
-                                              "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
-                                              isDisabled || currentDate < new Date()
-                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed" // Gray for disabled or past dates
-                                                : "bg-white text-black hover:bg-primary hover:text-white",
-                                              isSelected && "bg-primary text-white",
-                                              isToday && !isSelected && "bg-accent text-accent-foreground"
-                                            )}
-                                          >
-                                            {currentDate.getDate()}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </div>
                           </div>
 
                           {/* Remove item button */}
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 flex justify-center items-center">
                             <Button
-                              variant="ghost"
-                              size="icon"
+                              variant="destructive"
+                              size="lg"
                               onClick={() => removeItem(item.id)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-white bg-red-500 hover:bg-red-700 px-6 py-3 rounded-md flex items-center gap-2"
                             >
-                              <TrashIcon className="h-8 w-8" /> {/* Increased icon size */}
+                              <TrashIcon className="h-5 w-5" />
+                              מחק
                             </Button>
                           </div>
                         </div>
@@ -588,6 +544,69 @@ export default function CartPage() {
                     <span>משלוח (₪50 לבאר שבע בלבד)</span>
                   </label>
                 </div>
+              </div>
+
+              {/* Delivery date selection */}
+              <div className="mt-4">
+                <Popover
+                  open={openPopoverId === 0}
+                  onOpenChange={(open) => setOpenPopoverId(open ? 0 : null)}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={`h-10 text-sm flex items-center gap-2 ${
+                        !deliveryDate && validationErrors.deliveryDates ? "border-red-500 text-red-500" : ""
+                      }`}
+                    >
+                      <CalendarIcon className="h-4 w-4 ml-2" />
+                      {deliveryDate
+                        ? format(new Date(deliveryDate), "dd/MM/yyyy", { locale: he })
+                        : "בחר תאריך אספקה"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3" align="start" dir="rtl">
+                    <div className="flex flex-col items-center">
+                      <div className="grid grid-cols-7 gap-2 mb-2 w-full text-center">
+                        {["א", "ב", "ג", "ד", "ה", "ו", "ש"].map((day) => (
+                          <div key={day} className="font-semibold text-sm text-gray-700">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: 42 }).map((_, index) => {
+                          const currentDate = new Date();
+                          currentDate.setDate(currentDate.getDate() + index - currentDate.getDay());
+                          const isDisabled = isDateDisabled(currentDate);
+                          const isSelected = deliveryDate
+                            ? new Date(deliveryDate).toDateString() === currentDate.toDateString()
+                            : false;
+                          const isToday = new Date().toDateString() === currentDate.toDateString();
+
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => !isDisabled && handleDateSelect(currentDate)}
+                              disabled={isDisabled}
+                              className={cn(
+                                "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
+                                isDisabled || currentDate < new Date()
+                                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                  : "bg-white text-black hover:bg-primary hover:text-white",
+                                isSelected && "bg-primary text-white",
+                                isToday && !isSelected && "bg-accent text-accent-foreground"
+                              )}
+                            >
+                              {currentDate.getDate()}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="mt-4"> {/* Reduced margin */}

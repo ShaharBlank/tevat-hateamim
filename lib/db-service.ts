@@ -29,9 +29,19 @@ export type Order = {
   shipping: number
   status: "pending" | "approved" | "rejected" | "completed"
   createdat: string
+  deliveryDate?: string // Add delivery date field
   notes?: string
 }
 
+// Delivery date type
+export type DeliveryDate = {
+  id: string
+  orderid: string
+  date: string
+  time: string
+}
+
+// Notification type
 export type Notification = {
   id: string
   userid: string
@@ -90,37 +100,15 @@ export const generateorderNumber = async (): Promise<string> => {
 // Get desserts with error handling to prevent 204 errors
 export const getDesserts = async (): Promise<Dessert[]> => {
   try {
-    // First try to create table if it doesn't exist (development only)
-    try {
-      await setupSupabasePolicies()
+    const { data, error } = await supabaseClient
+      .from("desserts")
+      .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
 
-      // Try to query with all expected fields - using minweight (lowercase w)
-      const { data, error } = await supabaseClient
-        .from("desserts")
-        .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
-
-      if (error) throw error
-      return (data || []).map((dessert) => ({
-        ...dessert,
-        leadTime: dessert.lead_time, // Map database column to property
-      }))
-    } catch (mainError) {
-      console.error("Error in main query:", mainError)
-
-      // Fallback query without minweight if it doesn't exist
-      const { data, error } = await supabaseClient
-        .from("desserts")
-        .select("id, name, description, price, image, category, tags, available")
-
-      if (error) throw error
-
-      // Add default minweight
-      return (data || []).map((dessert) => ({
-        ...dessert,
-        minweight: 1, // Default minimum weight
-        leadTime: null, // Default leadTime to match Dessert type
-      }))
-    }
+    if (error) throw error
+    return (data || []).map((dessert) => ({
+      ...dessert,
+      leadTime: dessert.lead_time, // Map database column to property
+    }))
   } catch (error) {
     console.error("Error getting desserts:", error)
     return []
@@ -129,10 +117,14 @@ export const getDesserts = async (): Promise<Dessert[]> => {
 
 export const getDessertById = async (id: number): Promise<Dessert | null> => {
   try {
-    const { data, error } = await supabaseClient.from("desserts").select("*").eq("id", id).single()
+    const { data, error } = await supabaseClient
+      .from("desserts")
+      .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
+      .eq("id", id)
+      .single()
 
     if (error) throw error
-    return data
+    return data ? { ...data, leadTime: data.lead_time } : null // Map database column to property
   } catch (error) {
     console.error(`Error getting dessert with id ${id}:`, error)
     return null
@@ -161,7 +153,7 @@ export const addDessert = async (dessert: Omit<Dessert, "id">): Promise<Dessert>
       .single()
 
     if (error) throw error
-    return { ...data, leadTime: data.lead_time }
+    return { ...data, leadTime: data.lead_time } // Map database column to property
   } catch (error) {
     console.error("Error adding dessert:", error)
     throw error
@@ -179,7 +171,7 @@ export const updateDessert = async (id: number, dessert: Partial<Dessert>): Prom
       .single()
 
     if (error) throw error
-    return data ? { ...data, leadTime: data.lead_time } : null
+    return data ? { ...data, leadTime: data.lead_time } : null // Map database column to property
   } catch (error) {
     console.error(`Error updating dessert with id ${id}:`, error)
     throw error
@@ -284,7 +276,7 @@ export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
 }
 
 export const createOrder = async (
-  order: Omit<Order, "id" | "createdat" | "status" | "orderNumber">,
+  order: Omit<Order, "id" | "createdat" | "status" | "orderNumber"> & { deliveryDate: string },
 ): Promise<Order> => {
   try {
     const orderNumber = await generateorderNumber()
@@ -294,6 +286,7 @@ export const createOrder = async (
       ordernumber: orderNumber, // Use correct database field
       status: "pending" as const,
       createdat: new Date().toISOString(), // Use correct property name
+      deliveryDate: order.deliveryDate, // Include delivery date
     }
     const { data, error } = await supabaseClient.from("orders").insert([newOrder]).select().single()
     if (error) throw error
