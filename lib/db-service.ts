@@ -10,7 +10,7 @@ export type Dessert = {
   image: string
   category: string
   tags: string[]
-  available: boolean
+  stock: number // New field representing the quantity of the dessert
   minweight: number | null
   leadTime: number | null // New property for lead time
   weight?: number // Optional weight for order calculations
@@ -102,7 +102,7 @@ export const getDesserts = async (): Promise<Dessert[]> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
+      .select("id, name, description, price, image, category, tags, stock, minweight, lead_time")
 
     if (error) throw error
     return (data || []).map((dessert) => ({
@@ -119,7 +119,7 @@ export const getDessertById = async (id: number): Promise<Dessert | null> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, available, minweight, lead_time")
+      .select("id, name, description, price, image, category, tags, stock, minweight, lead_time")
       .eq("id", id)
       .single()
 

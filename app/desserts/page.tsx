@@ -63,6 +63,7 @@ export default function DessertsPage() {
   useEffect(() => {
     // Apply filters whenever filters change
     const filtered = desserts.filter((dessert) => {
+      const matchesStock = dessert.stock > 0 // Replace available with stock > 0 logic
       const matchesCategory = selectedCategory === "all" || dessert.category === selectedCategory
       const matchesPrice = dessert.price >= priceRange[0] && dessert.price <= priceRange[1]
       const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => dessert.tags.includes(tag))
@@ -73,7 +74,7 @@ export default function DessertsPage() {
 
   // Update the handleAddToCart function to handle weight
   const handleAddToCart = (dessert: Dessert) => {
-    if (!dessert.available && dessert.leadTime) {
+    if (dessert.stock <= 0 && dessert.leadTime) {
       toast({
         title: "לא ניתן להזמין מיד",
         description: `ניתן להזמין קינוח זה ${dessert.leadTime} ימים מראש.`,
@@ -235,14 +236,24 @@ export default function DessertsPage() {
                     {/* In the product grid section, update the display to show price per kg */}
                     <div className="mt-4 flex items-center justify-between">
                       <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddToCart(dessert)}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        <ShoppingCartIcon className="h-4 w-4 ml-1" />
-                        הוסף לסל
-                      </Button>
+                      {dessert.stock > 0 ? (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddToCart(dessert)}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          <ShoppingCartIcon className="h-4 w-4 ml-1" />
+                          הוסף לסל
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled
+                          className="bg-gray-300 text-gray-500 cursor-not-allowed"
+                        >
+                          נגמר מהמלאי
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -53,9 +53,9 @@ export default function AdminDesserts() {
     image: "/placeholder.svg?height=400&width=400",
     category: "",
     tags: "",
-    available: true,
     minweight: "",
     leadTime: "", // New property for lead time
+    stock: "",
   })
 
   useEffect(() => {
@@ -222,9 +222,9 @@ export default function AdminDesserts() {
       image: "/placeholder.svg?height=400&width=400",
       category: "",
       tags: "",
-      available: true,
       minweight: "",
       leadTime: "", // Reset lead time
+      stock: "",
     })
     setSelectedImageFile(null)
     setImagePreview(null)
@@ -232,6 +232,13 @@ export default function AdminDesserts() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+
+    if (name === "stock") {
+      const minWeight = formData.minweight ? Number(formData.minweight) : 0
+      const stockValue = Math.max(minWeight, Number(value)) // Ensure stock is at least minWeight
+      setFormData((prev) => ({ ...prev, stock: stockValue.toString() }))
+      return
+    }
 
     // Prevent negative values for leadTime
     if (name === "leadTime" && Number(value) <= 0) {
@@ -342,9 +349,9 @@ export default function AdminDesserts() {
         image: imageUrl,
         category: formData.category,
         tags: formData.tags.split(",").map((tag) => tag.trim()),
-        available: formData.available,
         minweight: minweight,
         leadTime: leadTime,
+        stock: Number(formData.stock),
       })
 
       await loadDesserts()
@@ -426,9 +433,9 @@ export default function AdminDesserts() {
         image: imageUrl,
         category: formData.category,
         tags: formData.tags.split(",").map((tag) => tag.trim()),
-        available: formData.available,
         minweight: minweight,
         leadTime: leadTime,
+        stock: Number(formData.stock),
       })
 
       await loadDesserts()
@@ -490,9 +497,9 @@ export default function AdminDesserts() {
       image: dessert.image,
       category: dessert.category,
       tags: dessert.tags.join(", "),
-      available: dessert.available,
       minweight: dessert.minweight ? dessert.minweight.toString() : "",
       leadTime: dessert.leadTime ? dessert.leadTime.toString() : "",
+      stock: dessert.stock.toString(),
     })
     setImagePreview(dessert.image)
     setIsEditDialogOpen(true)
@@ -583,6 +590,18 @@ export default function AdminDesserts() {
                         <p className="text-xs text-muted-foreground text-right">השאר ריק אם אין הגבלת משקל מינימלי</p>
                       </div>
                       <div className="grid gap-2">
+                        <Label htmlFor="stock">כמות במלאי</Label>
+                        <Input
+                          id="stock"
+                          name="stock"
+                          type="number"
+                          value={formData.stock}
+                          onChange={handleInputChange}
+                          placeholder="הזן כמות במלאי"
+                          dir="rtl"
+                        />
+                      </div>
+                      <div className="grid gap-2">
                         <Label htmlFor="leadTime">זמן הזמנה מראש (ימים)</Label>
                         <Input
                           id="leadTime"
@@ -646,18 +665,7 @@ export default function AdminDesserts() {
                           placeholder="תגיות מופרדות בפסיקים"
                           dir="rtl"
                         />
-                      </div>
-                      <div className="flex items-center gap-2 justify-end">
-                        <Label htmlFor="available">זמין במלאי</Label>
-                        <input
-                          id="available"
-                          name="available"
-                          type="checkbox"
-                          checked={formData.available}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, available: e.target.checked }))}
-                          className="h-4 w-4"
-                        />
-                      </div>
+                      </div>                
                     </div>
                   </div>
                   <DialogFooter>
@@ -714,7 +722,7 @@ export default function AdminDesserts() {
                           <TableCell>₪{dessert.price.toFixed(2)}</TableCell>
                           <TableCell>{dessert.category}</TableCell>
                           <TableCell>{dessert.minweight ? `${dessert.minweight} ק"ג` : "-"}</TableCell>
-                          <TableCell>{dessert.available ? "כן" : "לא"}</TableCell>
+                          <TableCell>{dessert.stock > 0 ? "כן" : "לא"}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
                               <Button variant="ghost" size="icon" onClick={() => openEditDialog(dessert)}>
@@ -897,13 +905,25 @@ export default function AdminDesserts() {
                   dir="rtl"
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-stock">כמות במלאי</Label>
+                <Input
+                  id="edit-stock"
+                  name="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  placeholder="הזן כמות במלאי"
+                  dir="rtl"
+                />
+              </div>
               <div className="flex items-center gap-2 justify-end">
                 <Label htmlFor="edit-available">זמין במלאי</Label>
                 <input
                   id="edit-available"
                   name="available"
                   type="checkbox"
-                  checked={formData.available}
+                  checked={Number(formData.stock) > 0}
                   onChange={(e) => setFormData((prev) => ({ ...prev, available: e.target.checked }))}
                   className="h-4 w-4"
                 />

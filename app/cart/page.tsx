@@ -260,25 +260,25 @@ export default function CartPage() {
 
   const getDisabledDates = (dessert?: Dessert) => {
     if (!dessert) {
-      return [] // Return an empty array if dessert is undefined
+      return [];
     }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Normalize to midnight for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (dessert.available) {
-      return [] // No disabled dates if the dessert is available
+    if (dessert.stock > 0) {
+      return []; // No disabled dates if the dessert is in stock
     }
 
-    const leadTime = dessert.leadTime || 0
-    const disabledDates = []
+    const leadTime = dessert.leadTime || 0;
+    const disabledDates = [];
 
     for (let i = 0; i < leadTime; i++) {
-      const date = new Date(today)
-      date.setDate(today.getDate() + i + 1)
-      disabledDates.push(date.toISOString().split("T")[0]) // Format as YYYY-MM-DD
+      const date = new Date(today);
+      date.setDate(today.getDate() + i + 1);
+      disabledDates.push(date.toISOString().split("T")[0]);
     }
-    return disabledDates
+    return disabledDates;
   }
 
   const getMaxLeadTime = () => {
@@ -353,7 +353,7 @@ export default function CartPage() {
                               ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
                               <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
                             </div>                            
-                            {dessert.leadTime != null && dessert.leadTime > 0 && (
+                            {dessert?.leadTime != null && dessert?.leadTime != undefined && dessert.leadTime > 0 && (
                               <p className="text-base text-gray-500 mt-1"> {/* Changed to text-base */}
                                 ימי הזמנה מראש: <b>{dessert.leadTime}</b>
                               </p>
