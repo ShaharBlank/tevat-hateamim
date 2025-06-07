@@ -104,8 +104,19 @@ export default function FeaturedDesserts() {
                   <h3 className="font-semibold text-lg">{dessert.name}</h3>
                   <p className="text-gray-600 text-sm mt-1">{dessert.description}</p>
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
-                    <Button size="sm" onClick={() => handleAddToCart(dessert)} className="bg-primary hover:bg-primary/90">
+                    {dessert.stock > 0 ? (
+                      <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">אזל המלאי</span>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddToCart(dessert)}
+                      disabled={dessert.stock === 0}
+                      className={`${
+                        dessert.stock === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90"
+                      }`}
+                    >
                       <ShoppingCartIcon className="h-4 w-4 ml-1" />
                       הוסף לסל
                     </Button>

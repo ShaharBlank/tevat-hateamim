@@ -11,8 +11,8 @@ export type Dessert = {
   category: string
   tags: string[]
   stock: number // New field representing the quantity of the dessert
-  minweight: number | null
-  leadTime: number // Added leadTime property
+  leadtime: number // Updated to match the new column name
+  weights: string[] // New field for possible weights
 }
 
 export type Order = {

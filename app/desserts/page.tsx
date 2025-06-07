@@ -74,25 +74,24 @@ export default function DessertsPage() {
 
   // Update the handleAddToCart function to handle weight
   const handleAddToCart = (dessert: Dessert) => {
-    if (dessert.stock <= 0 && dessert.leadTime) {
+    if (dessert.stock <= 0) {
       toast({
-        title: "לא ניתן להזמין מיד",
-        description: `ניתן להזמין קינוח זה ${dessert.leadTime} ימים מראש.`,
-        variant: "default",
+        title: "לא ניתן להזמין",
+        description: "המוצר אזל מהמלאי.",
+        variant: "destructive",
       })
       return
     }
 
-    // Define a default weight based on minimum weight or 1kg
-    const minweight = dessert.minweight || 1
+    const defaultWeight = typeof dessert.weights[0] === "string" ? parseFloat(dessert.weights[0]) : dessert.weights[0] || 1 // Ensure weight is a number
 
     addItem({
       id: dessert.id,
       name: dessert.name,
-      price: dessert.price, // This is now price per kg
+      price: dessert.price,
       image: dessert.image,
       quantity: 1,
-      weight: minweight, // Set initial weight to min weight
+      weight: defaultWeight,
     })
 
     toast({
@@ -233,27 +232,23 @@ export default function DessertsPage() {
                   <div className="p-4">
                     <h3 className="font-semibold text-lg">{dessert.name}</h3>
                     <p className="text-gray-600 text-sm mt-1">{dessert.description}</p>
-                    {/* In the product grid section, update the display to show price per kg */}
                     <div className="mt-4 flex items-center justify-between">
-                      <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
                       {dessert.stock > 0 ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddToCart(dessert)}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          <ShoppingCartIcon className="h-4 w-4 ml-1" />
-                          הוסף לסל
-                        </Button>
+                        <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
                       ) : (
-                        <Button
-                          size="sm"
-                          disabled
-                          className="bg-gray-300 text-gray-500 cursor-not-allowed"
-                        >
-                          נגמר מהמלאי
-                        </Button>
+                        <span className="text-red-600 font-medium">אזל המלאי</span>
                       )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleAddToCart(dessert)}
+                        disabled={dessert.stock === 0}
+                        className={`${
+                          dessert.stock === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90"
+                        }`}
+                      >
+                        <ShoppingCartIcon className="h-4 w-4 ml-1" />
+                        הוסף לסל
+                      </Button>
                     </div>
                   </div>
                 </div>

@@ -11,9 +11,8 @@ export type Dessert = {
   category: string
   tags: string[]
   stock: number // New field representing the quantity of the dessert
-  minweight: number | null
-  leadTime: number | null // New property for lead time
-  weight?: number // Optional weight for order calculations
+  leadtime: number | null // New property for lead time
+  weights: string[]; // New field for possible weights
 }
 
 export type Order = {
@@ -102,34 +101,35 @@ export const getDesserts = async (): Promise<Dessert[]> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, stock, minweight, lead_time")
+      .select("id, name, description, price, image, category, tags, stock, weights, leadtime");
 
-    if (error) throw error
+    if (error) throw error;
     return (data || []).map((dessert) => ({
       ...dessert,
-      leadTime: dessert.lead_time, // Map database column to property
-    }))
+      weights: JSON.parse(dessert.weights), // Parse weights JSON
+      leadtime: dessert.leadtime, // Map database column to property
+    }));
   } catch (error) {
-    console.error("Error getting desserts:", error)
-    return []
+    console.error("Error getting desserts:", error);
+    return [];
   }
-}
+};
 
 export const getDessertById = async (id: number): Promise<Dessert | null> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, stock, minweight, lead_time")
+      .select("id, name, description, price, image, category, tags, stock, weights, leadtime")
       .eq("id", id)
-      .single()
+      .single();
 
-    if (error) throw error
-    return data ? { ...data, leadTime: data.lead_time } : null // Map database column to property
+    if (error) throw error;
+    return data ? { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime } : null; // Map database column to property
   } catch (error) {
-    console.error(`Error getting dessert with id ${id}:`, error)
-    return null
+    console.error(`Error getting dessert with id ${id}:`, error);
+    return null;
   }
-}
+};
 
 export const getDessertsByCategory = async (category: string): Promise<Dessert[]> => {
   try {
@@ -148,15 +148,15 @@ export const addDessert = async (dessert: Omit<Dessert, "id">): Promise<Dessert>
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .insert([{ ...dessert, lead_time: dessert.leadTime }]) // Map property to database column
+      .insert([{ ...dessert, weights: JSON.stringify(dessert.weights), leadtime: dessert.leadtime }]) // Map property to database column
       .select()
-      .single()
+      .single();
 
-    if (error) throw error
-    return { ...data, leadTime: data.lead_time } // Map database column to property
+    if (error) throw error;
+    return { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime }; // Map database column to property
   } catch (error) {
-    console.error("Error adding dessert:", error)
-    throw error
+    console.error("Error adding dessert:", error);
+    throw error;
   }
 }
 
@@ -165,16 +165,20 @@ export const updateDessert = async (id: number, dessert: Partial<Dessert>): Prom
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .update({ ...dessert, lead_time: dessert.leadTime }) // Map property to database column
+      .update({
+        ...dessert,
+        weights: dessert.weights ? JSON.stringify(dessert.weights) : undefined,
+        leadtime: dessert.leadtime, // Ensure correct mapping to database column
+      })
       .eq("id", id)
       .select()
-      .single()
+      .single();
 
-    if (error) throw error
-    return data ? { ...data, leadTime: data.lead_time } : null // Map database column to property
+    if (error) throw error;
+    return data ? { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime } : null; // Map database column to property
   } catch (error) {
-    console.error(`Error updating dessert with id ${id}:`, error)
-    throw error
+    console.error(`Error updating dessert with id ${id}:`, error);
+    throw error;
   }
 }
 

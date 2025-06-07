@@ -82,9 +82,7 @@ export default function CartPage() {
 
   // Handle weight change
   const handleWeightChange = (id: number, weight: number) => {
-    const minweight = dessertsMap[id]?.minweight || 1 // Default to 1kg if not found
-    const adjustedWeight = Math.max(minweight, weight) // Ensure weight is at least minweight
-    updateWeight(id, adjustedWeight)
+    updateWeight(id, weight);
   }
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -270,10 +268,10 @@ export default function CartPage() {
       return []; // No disabled dates if the dessert is in stock
     }
 
-    const leadTime = dessert.leadTime || 0;
+    const leadtime = dessert.leadtime || 0; // Updated to match the new column name
     const disabledDates = [];
 
-    for (let i = 0; i < leadTime; i++) {
+    for (let i = 0; i < leadtime; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i + 1);
       disabledDates.push(date.toISOString().split("T")[0]);
@@ -284,7 +282,7 @@ export default function CartPage() {
   const getMaxLeadTime = () => {
     return items.reduce((max, item) => {
       const dessert = dessertsMap[item.id];
-      return dessert?.leadTime && dessert.leadTime > max ? dessert.leadTime : max;
+      return dessert?.leadtime && dessert.leadtime > max ? dessert.leadtime : max;
     }, 0);
   };
 
@@ -293,10 +291,10 @@ export default function CartPage() {
     today.setHours(0, 0, 0, 0); // Normalize to midnight for comparison
 
     const maxLeadTime = getMaxLeadTime();
-    const leadTimeLimit = new Date(today);
-    leadTimeLimit.setDate(today.getDate() + maxLeadTime);
+    const leadtimeLimit = new Date(today);
+    leadtimeLimit.setDate(today.getDate() + maxLeadTime);
 
-    return date < today || date > leadTimeLimit; // Disable past dates and dates beyond the max lead time
+    return date < today || date > leadtimeLimit; // Disable past dates and dates beyond the max lead time
   }
 
   const handleImageClick = (image: string) => {
@@ -333,7 +331,6 @@ export default function CartPage() {
                   <div className="divide-y">
                     {items.map((item) => {
                       const dessert = dessertsMap[item.id]; // Get the full Dessert object
-                      console.log(dessert);
                       return (
                         <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6">
                           <div
@@ -353,42 +350,29 @@ export default function CartPage() {
                               ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
                               <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
                             </div>                            
-                            {dessert?.leadTime != null && dessert?.leadTime != undefined && dessert.leadTime > 0 && (
+                            {dessert?.leadtime != null && dessert?.leadtime > 0 && (
                               <p className="text-base text-gray-500 mt-1"> {/* Changed to text-base */}
-                                ימי הזמנה מראש: <b>{dessert.leadTime}</b>
+                                ימי הזמנה מראש: <b>{dessert.leadtime}</b>
                               </p>
                             )}
                             {/* Weight control */}
                             <div className="mt-3 mb-3">
                               <label className="text-base mb-2 flex items-center">
                                 <ScaleIcon className="h-4 w-4 ml-2" />
-                                משקל (ק"ג): {item.weight.toFixed(1)}
+                                משקל (ק"ג):
                               </label>
                               <div className="flex items-center gap-3">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleWeightChange(item.id, Math.max(dessertsMap[item.id]?.minweight || 1, item.weight - 0.1))}
-                                >
-                                  <MinusIcon className="h-4 w-4" />
-                                </Button>
-                                <Slider
-                                  min={dessertsMap[item.id]?.minweight || 1}
-                                  max={5}
-                                  step={0.1}
-                                  value={[item.weight]}
-                                  onValueChange={(value) => handleWeightChange(item.id, value[0])}
-                                  className="max-w-[120px] mx-2"
-                                />
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleWeightChange(item.id, item.weight + 0.1)}
-                                >
-                                  <PlusIcon className="h-4 w-4" />
-                                </Button>
+                                <select
+                                  value={item.weight}
+                                  onChange={(e) => handleWeightChange(item.id, parseFloat(e.target.value))}
+                                  className="border rounded-md p-2"
+                                >                                  
+                                  {dessertsMap[item.id]?.weights.map((weight) => (
+                                    <option key={weight} value={weight}>
+                                      {weight} ק"ג
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
                             </div>
                           </div>

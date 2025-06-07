@@ -53,9 +53,10 @@ export default function AdminDesserts() {
     image: "/placeholder.svg?height=400&width=400",
     category: "",
     tags: "",
-    minweight: "",
-    leadTime: "", // New property for lead time
+    leadtime: "", // New property for lead time
     stock: "",
+    weights: [] as string[], // New property for possible weights
+    newWeight: "", // New property for adding weights
   })
 
   useEffect(() => {
@@ -222,9 +223,10 @@ export default function AdminDesserts() {
       image: "/placeholder.svg?height=400&width=400",
       category: "",
       tags: "",
-      minweight: "",
-      leadTime: "", // Reset lead time
+      leadtime: "", // Reset lead time
       stock: "",
+      weights: [], // Reset weights
+      newWeight: "", // Reset new weight
     })
     setSelectedImageFile(null)
     setImagePreview(null)
@@ -233,15 +235,14 @@ export default function AdminDesserts() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
 
-    if (name === "stock") {
-      const minWeight = formData.minweight ? Number(formData.minweight) : 0
-      const stockValue = Math.max(minWeight, Number(value)) // Ensure stock is at least minWeight
-      setFormData((prev) => ({ ...prev, stock: stockValue.toString() }))
+    if (name === "weights") {
+      const weightsArray = value.split(",").map((w) => w.trim())
+      setFormData((prev) => ({ ...prev, weights: weightsArray }))
       return
     }
 
-    // Prevent negative values for leadTime
-    if (name === "leadTime" && Number(value) <= 0) {
+    // Prevent negative values for leadtime
+    if (name === "leadtime" && Number(value) <= 0) {
       toast({
         title: "שגיאה",
         description: "זמן ההזמנה מראש לא יכול להיות שלילי",
@@ -255,6 +256,30 @@ export default function AdminDesserts() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleAddWeight = () => {
+    if (!formData.newWeight.trim()) {
+      toast({
+        title: "שגיאה",
+        description: "יש להזין משקל תקין",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      weights: [...prev.weights, formData.newWeight.trim()],
+      newWeight: "",
+    }))
+  }
+
+  const handleRemoveWeight = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      weights: prev.weights.filter((_, i) => i !== index),
+    }))
   }
 
   const handleAddDessert = async () => {
@@ -286,6 +311,15 @@ export default function AdminDesserts() {
         return
       }
 
+      if (formData.weights.length === 0) {
+        toast({
+          title: "שגיאה",
+          description: "יש להזין לפחות משקל אחד לקינוח",
+          variant: "destructive",
+        })
+        return
+      }
+
       const price = Number.parseFloat(formData.price)
       if (isNaN(price) || price <= 0) {
         toast({
@@ -305,20 +339,8 @@ export default function AdminDesserts() {
         return
       }
 
-      const minweight = formData.minweight
-        ? Number.parseFloat(formData.minweight)
-        : 0.1
-      if (isNaN(minweight) || minweight <= 0) {
-        toast({
-          title: "שגיאה",
-          description: "משקל מינימלי חייב להיות מספר חיובי",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const leadTime = formData.leadTime ? Number.parseInt(formData.leadTime) : null
-      if (leadTime !== null && isNaN(leadTime)) {
+      const leadtime = formData.leadtime ? Number.parseInt(formData.leadtime) : null
+      if (leadtime !== null && isNaN(leadtime)) {
         toast({
           title: "שגיאה",
           description: "זמן ההזמנה המוקדם חייב להיות מספר שלם חיובי או ריק",
@@ -349,9 +371,9 @@ export default function AdminDesserts() {
         image: imageUrl,
         category: formData.category,
         tags: formData.tags.split(",").map((tag) => tag.trim()),
-        minweight: minweight,
-        leadTime: leadTime,
+        leadtime: leadtime,
         stock: Number(formData.stock),
+        weights: formData.weights,
       })
 
       await loadDesserts()
@@ -388,6 +410,15 @@ export default function AdminDesserts() {
         return
       }
 
+      if (formData.weights.length === 0) {
+        toast({
+          title: "שגיאה",
+          description: "יש להזין לפחות משקל אחד לקינוח",
+          variant: "destructive",
+        })
+        return
+      }
+
       const price = Number.parseFloat(formData.price)
       if (isNaN(price) || price <= 0) {
         toast({
@@ -398,18 +429,8 @@ export default function AdminDesserts() {
         return
       }
 
-      const minweight = formData.minweight ? Number.parseFloat(formData.minweight) : null
-      if (minweight !== null && (isNaN(minweight) || minweight <= 0)) {
-        toast({
-          title: "שגיאה",
-          description: "משקל מינימלי חייב להיות מספר חיובי",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const leadTime = formData.leadTime ? Number.parseInt(formData.leadTime) : null
-      if (leadTime !== null && isNaN(leadTime)) {
+      const leadtime = formData.leadtime ? Number.parseInt(formData.leadtime) : null
+      if (leadtime !== null && isNaN(leadtime)) {
         toast({
           title: "שגיאה",
           description: "זמן ההזמנה המוקדם חייב להיות מספר שלם חיובי או ריק",
@@ -433,9 +454,9 @@ export default function AdminDesserts() {
         image: imageUrl,
         category: formData.category,
         tags: formData.tags.split(",").map((tag) => tag.trim()),
-        minweight: minweight,
-        leadTime: leadTime,
+        leadtime: formData.leadtime ? Number.parseInt(formData.leadtime) : null,
         stock: Number(formData.stock),
+        weights: formData.weights,
       })
 
       await loadDesserts()
@@ -497,9 +518,10 @@ export default function AdminDesserts() {
       image: dessert.image,
       category: dessert.category,
       tags: dessert.tags.join(", "),
-      minweight: dessert.minweight ? dessert.minweight.toString() : "",
-      leadTime: dessert.leadTime ? dessert.leadTime.toString() : "",
+      leadtime: dessert.leadtime ? dessert.leadtime.toString() : "",
       stock: dessert.stock.toString(),
+      weights: dessert.weights || [],
+      newWeight: "",
     })
     setImagePreview(dessert.image)
     setIsEditDialogOpen(true)
@@ -576,18 +598,37 @@ export default function AdminDesserts() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="minweight">מינימום משקל להזמנה (ק"ג)</Label>
-                        <Input
-                          id="minweight"
-                          name="minweight"
-                          type="number"
-                          step="0.1"
-                          value={formData.minweight}
-                          onChange={handleInputChange}
-                          placeholder="השאר ריק אם אין הגבלה"
-                          dir="rtl"
-                        />
-                        <p className="text-xs text-muted-foreground text-right">השאר ריק אם אין הגבלת משקל מינימלי</p>
+                        <Label htmlFor="weights">משקלים אפשריים</Label>
+                        <div className="space-y-2">
+                          {formData.weights.map((weight, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <span>{weight} ק"ג</span>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => handleRemoveWeight(index)}
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="new-weight"
+                            name="newWeight"
+                            value={formData.newWeight || ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (/^\d*\.?\d*$/.test(value)) { // Allow only numeric input
+                                setFormData((prev) => ({ ...prev, newWeight: value }));
+                              }
+                            }}
+                            placeholder="הזן משקל חדש"
+                            dir="rtl"
+                          />
+                          <Button onClick={handleAddWeight}>הוסף משקל</Button>
+                        </div>
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="stock">כמות במלאי</Label>
@@ -602,12 +643,12 @@ export default function AdminDesserts() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="leadTime">זמן הזמנה מראש (ימים)</Label>
+                        <Label htmlFor="leadtime">זמן הזמנה מראש (ימים)</Label>
                         <Input
-                          id="leadTime"
-                          name="leadTime"
+                          id="leadtime"
+                          name="leadtime"
                           type="number"
-                          value={formData.leadTime}
+                          value={formData.leadtime}
                           onChange={handleInputChange}
                           placeholder="הזן מספר ימים"
                           dir="rtl"
@@ -665,7 +706,7 @@ export default function AdminDesserts() {
                           placeholder="תגיות מופרדות בפסיקים"
                           dir="rtl"
                         />
-                      </div>                
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
@@ -721,7 +762,6 @@ export default function AdminDesserts() {
                           <TableCell className="font-medium">{dessert.name}</TableCell>
                           <TableCell>₪{dessert.price.toFixed(2)}</TableCell>
                           <TableCell>{dessert.category}</TableCell>
-                          <TableCell>{dessert.minweight ? `${dessert.minweight} ק"ג` : "-"}</TableCell>
                           <TableCell>{dessert.stock > 0 ? "כן" : "לא"}</TableCell>
                           <TableCell>
                             <div className="flex gap-2">
@@ -827,26 +867,45 @@ export default function AdminDesserts() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-minweight">מינימום משקל להזמנה (ק"ג)</Label>
-                <Input
-                  id="edit-minweight"
-                  name="minweight"
-                  type="number"
-                  step="0.1"
-                  value={formData.minweight}
-                  onChange={handleInputChange}
-                  placeholder="השאר ריק אם אין הגבלה"
-                  dir="rtl"
-                />
-                <p className="text-xs text-muted-foreground text-right">השאר ריק אם אין הגבלת משקל מינימלי</p>
+                <Label htmlFor="edit-weights">משקלים אפשריים</Label>
+                <div className="space-y-2">
+                  {formData.weights.map((weight, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span>{weight} ק"ג</span>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleRemoveWeight(index)}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    id="edit-new-weight"
+                    name="newWeight"
+                    value={formData.newWeight || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^\d*\.?\d*$/.test(value)) { // Allow only numeric input
+                        setFormData((prev) => ({ ...prev, newWeight: value }));
+                      }
+                    }}
+                    placeholder="הזן משקל חדש"
+                    dir="rtl"
+                  />
+                  <Button onClick={handleAddWeight}>הוסף משקל</Button>
+                </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-leadTime">זמן הזמנה מראש (ימים)</Label>
+                <Label htmlFor="edit-leadtime">זמן הזמנה מראש (ימים)</Label>
                 <Input
-                  id="edit-leadTime"
-                  name="leadTime"
+                  id="edit-leadtime"
+                  name="leadtime"
                   type="number"
-                  value={formData.leadTime}
+                  value={formData.leadtime}
                   onChange={handleInputChange}
                   placeholder="הזן מספר ימים"
                   dir="rtl"
@@ -915,17 +974,6 @@ export default function AdminDesserts() {
                   onChange={handleInputChange}
                   placeholder="הזן כמות במלאי"
                   dir="rtl"
-                />
-              </div>
-              <div className="flex items-center gap-2 justify-end">
-                <Label htmlFor="edit-available">זמין במלאי</Label>
-                <input
-                  id="edit-available"
-                  name="available"
-                  type="checkbox"
-                  checked={Number(formData.stock) > 0}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, available: e.target.checked }))}
-                  className="h-4 w-4"
                 />
               </div>
             </div>
