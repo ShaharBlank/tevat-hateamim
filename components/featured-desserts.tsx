@@ -43,7 +43,7 @@ export default function FeaturedDesserts() {
       price: dessert.price, // Price per kg
       image: dessert.image,
       quantity: 1,
-      weight: 1, // Default weight: 1kg
+      weight: 0, // Default weight: 1kg
     })
 
     toast({

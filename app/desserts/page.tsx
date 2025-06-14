@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { useCart } from "@/lib/cart-context"
 import { Dessert, getDesserts, getDessertCategories } from "@/lib/db-service"
 import Header from "@/components/header"
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 export default function DessertsPage() {
+  const { toast: showToast } = useToast()
   const [desserts, setDesserts] = useState<Dessert[]>([])
   const [filteredDesserts, setFilteredDesserts] = useState<Dessert[]>([]) // Add state for filtered desserts
   const [categories, setCategories] = useState<string[]>([]) // Dynamically loaded categories
@@ -21,7 +23,6 @@ export default function DessertsPage() {
   const [priceRange, setPriceRange] = useState([0, 1000]) // Default wide range
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
   const { addItem } = useCart()
   const [showFilters, setShowFilters] = useState(false) // Ensure showFilters state is defined
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -73,7 +74,6 @@ export default function DessertsPage() {
     setFilteredDesserts(filtered)
   }, [desserts, selectedCategory, priceRange, selectedTags, showInStockOnly]) // Add showInStockOnly to dependencies
 
-  // Update the handleAddToCart function to handle weight
   const handleAddToCart = (dessert: Dessert) => {
     if (dessert.stock <= 0) {
       toast({
@@ -95,7 +95,6 @@ export default function DessertsPage() {
       weight: defaultWeight,
     })
 
-    // Ensure toast is displayed correctly
     toast({
       title: "התווסף לסל",
       description: `${dessert.name} התווסף לסל הקניות שלך.`,
