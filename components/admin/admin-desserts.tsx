@@ -55,8 +55,9 @@ export default function AdminDesserts() {
     tags: "",
     leadtime: "", // New property for lead time
     stock: "",
-    weights: [] as string[], // New property for possible weights
-    newWeight: "", // New property for adding weights
+    amount: [] as string[], // ערכים אפשריים (משקלים או יחידות)
+    newAmount: "",
+    isweight: true,
   })
 
   useEffect(() => {
@@ -225,8 +226,9 @@ export default function AdminDesserts() {
       tags: "",
       leadtime: "", // Reset lead time
       stock: "",
-      weights: [], // Reset weights
-      newWeight: "", // Reset new weight
+      amount: [], // Reset weights
+      newAmount: "", // Reset new weight
+      isweight: true,
     })
     setSelectedImageFile(null)
     setImagePreview(null)
@@ -235,9 +237,9 @@ export default function AdminDesserts() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
 
-    if (name === "weights") {
+    if (name === "amount") {
       const weightsArray = value.split(",").map((w) => w.trim())
-      setFormData((prev) => ({ ...prev, weights: weightsArray }))
+      setFormData((prev) => ({ ...prev, amount: weightsArray }))
       return
     }
 
@@ -258,27 +260,26 @@ export default function AdminDesserts() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAddWeight = () => {
-    if (!formData.newWeight.trim()) {
+  const handleAddAmount = () => {
+    if (!formData.newAmount.trim()) {
       toast({
         title: "שגיאה",
-        description: "יש להזין משקל תקין",
+        description: "יש להזין ערך תקין",
         variant: "destructive",
       })
       return
     }
-
     setFormData((prev) => ({
       ...prev,
-      weights: [...prev.weights, formData.newWeight.trim()],
-      newWeight: "",
+      amount: [...prev.amount, formData.newAmount.trim()],
+      newAmount: "",
     }))
   }
 
-  const handleRemoveWeight = (index: number) => {
+  const handleRemoveAmount = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      weights: prev.weights.filter((_, i) => i !== index),
+      amount: prev.amount.filter((_, i) => i !== index),
     }))
   }
 
@@ -311,10 +312,10 @@ export default function AdminDesserts() {
         return
       }
 
-      if (formData.weights.length === 0) {
+      if (formData.amount.length === 0) {
         toast({
           title: "שגיאה",
-          description: "יש להזין לפחות משקל אחד לקינוח",
+          description: "יש להזין לפחות ערך אחד",
           variant: "destructive",
         })
         return
@@ -373,7 +374,8 @@ export default function AdminDesserts() {
         tags: formData.tags.split(",").map((tag) => tag.trim()),
         leadtime: leadtime,
         stock: Number(formData.stock),
-        weights: formData.weights,
+        amount: formData.amount,
+        isweight: formData.isweight,
       })
 
       await loadDesserts()
@@ -410,10 +412,10 @@ export default function AdminDesserts() {
         return
       }
 
-      if (formData.weights.length === 0) {
+      if (formData.amount.length === 0) {
         toast({
           title: "שגיאה",
-          description: "יש להזין לפחות משקל אחד לקינוח",
+          description: "יש להזין לפחות ערך אחד לקינוח",
           variant: "destructive",
         })
         return
@@ -456,7 +458,8 @@ export default function AdminDesserts() {
         tags: formData.tags.split(",").map((tag) => tag.trim()),
         leadtime: formData.leadtime ? Number.parseInt(formData.leadtime) : null,
         stock: Number(formData.stock),
-        weights: formData.weights,
+        amount: formData.amount,
+        isweight: formData.isweight,
       })
 
       await loadDesserts()
@@ -520,8 +523,9 @@ export default function AdminDesserts() {
       tags: dessert.tags.join(", "),
       leadtime: dessert.leadtime ? dessert.leadtime.toString() : "",
       stock: dessert.stock.toString(),
-      weights: dessert.weights || [],
-      newWeight: "",
+      amount: dessert.amount || [],
+      newAmount: "",
+      isweight: dessert.isweight,
     })
     setImagePreview(dessert.image)
     setIsEditDialogOpen(true)
@@ -598,15 +602,28 @@ export default function AdminDesserts() {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="weights">משקלים אפשריים</Label>
+                        <Label htmlFor="isweight">סוג מכירה</Label>
+                        <select
+                          id="isweight"
+                          name="isweight"
+                          value={formData.isweight ? "weight" : "unit"}
+                          onChange={e => setFormData(prev => ({ ...prev, isweight: e.target.value === "weight" }))}
+                          className="border rounded-md p-2"
+                        >
+                          <option value="weight">לפי משקל</option>
+                          <option value="unit">לפי יחידות</option>
+                        </select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="amount">אפשרויות {formData.isweight ? "משקל" : "יחידות"}</Label>
                         <div className="space-y-2">
-                          {formData.weights.map((weight, index) => (
+                          {formData.amount.map((val, index) => (
                             <div key={index} className="flex items-center gap-2">
-                              <span>{weight} ק"ג</span>
+                              <span>{val} {formData.isweight ? "ק\"ג" : "יח'"}</span>
                               <Button
                                 variant="destructive"
                                 size="icon"
-                                onClick={() => handleRemoveWeight(index)}
+                                onClick={() => handleRemoveAmount(index)}
                               >
                                 <TrashIcon className="h-4 w-4" />
                               </Button>
@@ -615,19 +632,25 @@ export default function AdminDesserts() {
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <Input
-                            id="new-weight"
-                            name="newWeight"
-                            value={formData.newWeight || ""}
+                            id="new-amount"
+                            name="newAmount"
+                            value={formData.newAmount || ""}
                             onChange={(e) => {
                               const value = e.target.value;
-                              if (/^\d*\.?\d*$/.test(value)) { // Allow only numeric input
-                                setFormData((prev) => ({ ...prev, newWeight: value }));
+                              if (formData.isweight) {
+                                if (/^\d*\.?\d*$/.test(value)) {
+                                  setFormData((prev) => ({ ...prev, newAmount: value }));
+                                }
+                              } else {
+                                if (/^\d+$/.test(value)) {
+                                  setFormData((prev) => ({ ...prev, newAmount: value }));
+                                }
                               }
                             }}
-                            placeholder="הזן משקל חדש"
+                            placeholder={formData.isweight ? "הזן משקל חדש" : "הזן כמות יחידות"}
                             dir="rtl"
                           />
-                          <Button onClick={handleAddWeight}>הוסף משקל</Button>
+                          <Button onClick={handleAddAmount}>הוסף</Button>
                         </div>
                       </div>
                       <div className="grid gap-2">
@@ -867,15 +890,28 @@ export default function AdminDesserts() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-weights">משקלים אפשריים</Label>
+                <Label htmlFor="edit-isweight">סוג מכירה</Label>
+                <select
+                  id="edit-isweight"
+                  name="isweight"
+                  value={formData.isweight ? "weight" : "unit"}
+                  onChange={e => setFormData(prev => ({ ...prev, isweight: e.target.value === "weight" }))}
+                  className="border rounded-md p-2"
+                >
+                  <option value="weight">לפי משקל</option>
+                  <option value="unit">לפי יחידות</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-amount">אפשרויות {formData.isweight ? "משקל" : "יחידות"}</Label>
                 <div className="space-y-2">
-                  {formData.weights.map((weight, index) => (
+                  {formData.amount.map((val, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <span>{weight} ק"ג</span>
+                      <span>{val} {formData.isweight ? "ק\"ג" : "יח'"}</span>
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleRemoveWeight(index)}
+                        onClick={() => handleRemoveAmount(index)}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>
@@ -884,19 +920,25 @@ export default function AdminDesserts() {
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <Input
-                    id="edit-new-weight"
-                    name="newWeight"
-                    value={formData.newWeight || ""}
+                    id="edit-new-amount"
+                    name="newAmount"
+                    value={formData.newAmount || ""}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (/^\d*\.?\d*$/.test(value)) { // Allow only numeric input
-                        setFormData((prev) => ({ ...prev, newWeight: value }));
+                      if (formData.isweight) {
+                        if (/^\d*\.?\d*$/.test(value)) {
+                          setFormData((prev) => ({ ...prev, newAmount: value }));
+                        }
+                      } else {
+                        if (/^\d+$/.test(value)) {
+                          setFormData((prev) => ({ ...prev, newAmount: value }));
+                        }
                       }
                     }}
-                    placeholder="הזן משקל חדש"
+                    placeholder={formData.isweight ? "הזן משקל חדש" : "הזן כמות יחידות"}
                     dir="rtl"
                   />
-                  <Button onClick={handleAddWeight}>הוסף משקל</Button>
+                  <Button onClick={handleAddAmount}>הוסף</Button>
                 </div>
               </div>
               <div className="grid gap-2">

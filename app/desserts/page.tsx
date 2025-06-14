@@ -83,7 +83,7 @@ export default function DessertsPage() {
       return
     }
 
-    const defaultWeight = typeof dessert.weights[0] === "string" ? parseFloat(dessert.weights[0]) : dessert.weights[0] || 1 // Ensure weight is a number
+    const defaultWeight = typeof dessert.amount[0] === "string" ? parseFloat(dessert.amount[0]) : dessert.amount[0] || 1
 
     addItem({
       id: dessert.id,
@@ -94,10 +94,14 @@ export default function DessertsPage() {
       weight: defaultWeight,
     })
 
+    // Ensure toast is displayed correctly
     toast({
-      title: "נוסף לסל הקניות",
-      description: `${dessert.name} נוסף לסל הקניות שלך`,
+      title: "התווסף לסל",
+      description: `${dessert.name} התווסף לסל הקניות שלך.`,
+      variant: "default",
     })
+
+    console.log(`${dessert.name} התווסף לסל הקניות שלך.`)
   }
 
   // Get all unique tags from all desserts
@@ -232,9 +236,15 @@ export default function DessertsPage() {
                   <div className="p-4">
                     <h3 className="font-semibold text-lg">{dessert.name}</h3>
                     <p className="text-gray-600 text-sm mt-1">{dessert.description}</p>
+                    <div className="mt-2">
+                      <span className="text-sm text-gray-700">
+                        אפשרויות {dessert.isweight ? "משקל" : "יחידות"}: {dessert.amount.join(", ")}{" "}
+                        {dessert.isweight ? "ק\"ג" : "יח'"}
+                      </span>
+                    </div>
                     <div className="mt-4 flex items-center justify-between">
                       {dessert.stock > 0 ? (
-                        <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
+                        <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/{dessert.isweight ? "ק\"ג" : "יח'"}</span>
                       ) : (
                         <span className="text-red-600 font-medium">אזל המלאי</span>
                       )}

@@ -12,7 +12,8 @@ export type Dessert = {
   tags: string[]
   stock: number // New field representing the quantity of the dessert
   leadtime: number // Updated to match the new column name
-  weights: string[] // New field for possible weights
+  amount: string[] // ערכים אפשריים (משקלים או יחידות)
+  isweight: boolean // האם נמכר לפי משקל
 }
 
 export type Order = {

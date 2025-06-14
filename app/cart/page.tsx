@@ -81,8 +81,8 @@ export default function CartPage() {
   }, [])
 
   // Handle weight change
-  const handleWeightChange = (id: number, weight: number) => {
-    updateWeight(id, weight);
+  const handleAmountChange = (id: number, amount: number) => {
+    updateWeight(id, amount); // עדיין משתמש בפונקציה של cart-context, אבל המשמעות היא כמות/משקל
   }
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -330,7 +330,8 @@ export default function CartPage() {
                   <h2 className="text-xl font-semibold mb-3">פריטים בסל</h2> {/* Reduced margin */}
                   <div className="divide-y">
                     {items.map((item) => {
-                      const dessert = dessertsMap[item.id]; // Get the full Dessert object
+                      const dessert = dessertsMap[item.id];
+                      if (!dessert) return null;
                       return (
                         <div key={item.id} className="py-6 flex flex-col sm:flex-row gap-6">
                           <div
@@ -347,29 +348,29 @@ export default function CartPage() {
                           <div className="flex-grow">
                             <h3 className="font-semibold text-xl">{item.name}</h3>
                             <div className="text-base text-gray-500 mt-2">
-                              ₪{item.price.toFixed(2)}/ק"ג × {item.weight.toFixed(1)} ק"ג =
+                              ₪{item.price.toFixed(2)}/{dessert.isweight ? "ק\"ג" : "יח'"} × {item.weight.toFixed(1)} {dessert.isweight ? "ק\"ג" : "יח'"} =
                               <span className="font-semibold"> ₪{(item.price * item.weight).toFixed(2)}</span>
-                            </div>                            
+                            </div>
                             {dessert?.leadtime != null && dessert?.leadtime > 0 && (
-                              <p className="text-base text-gray-500 mt-1"> {/* Changed to text-base */}
+                              <p className="text-base text-gray-500 mt-1">
                                 ימי הזמנה מראש: <b>{dessert.leadtime}</b>
                               </p>
                             )}
-                            {/* Weight control */}
+                            {/* Amount/Weight control */}
                             <div className="mt-3 mb-3">
                               <label className="text-base mb-2 flex items-center">
                                 <ScaleIcon className="h-4 w-4 ml-2" />
-                                משקל (ק"ג):
+                                {dessert.isweight ? "משקל (ק\"ג):" : "כמות (יחידות):"}
                               </label>
                               <div className="flex items-center gap-3">
                                 <select
                                   value={item.weight}
-                                  onChange={(e) => handleWeightChange(item.id, parseFloat(e.target.value))}
+                                  onChange={(e) => handleAmountChange(item.id, parseFloat(e.target.value))}
                                   className="border rounded-md p-2"
-                                >                                  
-                                  {dessertsMap[item.id]?.weights.map((weight) => (
-                                    <option key={weight} value={weight}>
-                                      {weight} ק"ג
+                                >
+                                  {dessert.amount.map((val) => (
+                                    <option key={val} value={val}>
+                                      {val} {dessert.isweight ? "ק\"ג" : "יח'"}
                                     </option>
                                   ))}
                                 </select>

@@ -6,13 +6,14 @@ export type Dessert = {
   id: number
   name: string
   description: string
-  price: number // Now represents price per kg
+  price: number
   image: string
   category: string
   tags: string[]
-  stock: number // New field representing the quantity of the dessert
-  leadtime: number | null // New property for lead time
-  weights: string[]; // New field for possible weights
+  stock: number
+  leadtime: number | null
+  amount: string[] // ערכים אפשריים (משקלים או יחידות)
+  isweight: boolean // האם נמכר לפי משקל
 }
 
 export type Order = {
@@ -101,13 +102,14 @@ export const getDesserts = async (): Promise<Dessert[]> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, stock, weights, leadtime");
+      .select("id, name, description, price, image, category, tags, stock, amount, isweight, leadtime");
 
     if (error) throw error;
     return (data || []).map((dessert) => ({
       ...dessert,
-      weights: JSON.parse(dessert.weights), // Parse weights JSON
-      leadtime: dessert.leadtime, // Map database column to property
+      amount: JSON.parse(dessert.amount),
+      isweight: dessert.isweight,
+      leadtime: dessert.leadtime,
     }));
   } catch (error) {
     console.error("Error getting desserts:", error);
@@ -119,12 +121,12 @@ export const getDessertById = async (id: number): Promise<Dessert | null> => {
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .select("id, name, description, price, image, category, tags, stock, weights, leadtime")
+      .select("id, name, description, price, image, category, tags, stock, amount, isweight, leadtime")
       .eq("id", id)
       .single();
 
     if (error) throw error;
-    return data ? { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime } : null; // Map database column to property
+    return data ? { ...data, amount: JSON.parse(data.amount), isweight: data.isweight, leadtime: data.leadtime } : null;
   } catch (error) {
     console.error(`Error getting dessert with id ${id}:`, error);
     return null;
@@ -148,12 +150,12 @@ export const addDessert = async (dessert: Omit<Dessert, "id">): Promise<Dessert>
   try {
     const { data, error } = await supabaseClient
       .from("desserts")
-      .insert([{ ...dessert, weights: JSON.stringify(dessert.weights), leadtime: dessert.leadtime }]) // Map property to database column
+      .insert([{ ...dessert, amount: JSON.stringify(dessert.amount) }])
       .select()
       .single();
 
     if (error) throw error;
-    return { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime }; // Map database column to property
+    return { ...data, amount: JSON.parse(data.amount), isweight: data.isweight, leadtime: data.leadtime };
   } catch (error) {
     console.error("Error adding dessert:", error);
     throw error;
@@ -167,15 +169,14 @@ export const updateDessert = async (id: number, dessert: Partial<Dessert>): Prom
       .from("desserts")
       .update({
         ...dessert,
-        weights: dessert.weights ? JSON.stringify(dessert.weights) : undefined,
-        leadtime: dessert.leadtime, // Ensure correct mapping to database column
+        amount: dessert.amount ? JSON.stringify(dessert.amount) : undefined,
       })
       .eq("id", id)
       .select()
       .single();
 
     if (error) throw error;
-    return data ? { ...data, weights: JSON.parse(data.weights), leadtime: data.leadtime } : null; // Map database column to property
+    return data ? { ...data, amount: JSON.parse(data.amount), isweight: data.isweight, leadtime: data.leadtime } : null;
   } catch (error) {
     console.error(`Error updating dessert with id ${id}:`, error);
     throw error;
