@@ -711,11 +711,13 @@ export default function AdminDesserts() {
                             <SelectValue placeholder="בחר קטגוריה" />
                           </SelectTrigger>
                           <SelectContent dir="rtl">
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
+                            {categories
+                              .filter((category) => category.trim() !== "") // Filter out empty or whitespace-only categories
+                              .map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -757,7 +759,6 @@ export default function AdminDesserts() {
                       <TableHead>שם</TableHead>
                       <TableHead>מחיר</TableHead>
                       <TableHead>קטגוריה</TableHead>
-                      <TableHead>מינ' משקל</TableHead>
                       <TableHead>זמין</TableHead>
                       <TableHead>פעולות</TableHead>
                     </TableRow>
@@ -942,6 +943,18 @@ export default function AdminDesserts() {
                 </div>
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="edit-stock">כמות במלאי</Label>
+                <Input
+                  id="edit-stock"
+                  name="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  placeholder="הזן כמות במלאי"
+                  dir="rtl"
+                />
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="edit-leadtime">זמן הזמנה מראש (ימים)</Label>
                 <Input
                   id="edit-leadtime"
@@ -987,11 +1000,13 @@ export default function AdminDesserts() {
                     <SelectValue placeholder="בחר קטגוריה" />
                   </SelectTrigger>
                   <SelectContent dir="rtl">
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
+                    {categories
+                      .filter((category) => category.trim() !== "") // Filter out empty or whitespace-only categories
+                      .map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -1003,18 +1018,6 @@ export default function AdminDesserts() {
                   value={formData.tags}
                   onChange={handleInputChange}
                   placeholder="תגיות מופרדות בפסיקים"
-                  dir="rtl"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-stock">כמות במלאי</Label>
-                <Input
-                  id="edit-stock"
-                  name="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  placeholder="הזן כמות במלאי"
                   dir="rtl"
                 />
               </div>

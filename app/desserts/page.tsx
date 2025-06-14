@@ -25,6 +25,7 @@ export default function DessertsPage() {
   const { addItem } = useCart()
   const [showFilters, setShowFilters] = useState(false) // Ensure showFilters state is defined
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [showInStockOnly, setShowInStockOnly] = useState(false); // Add state for "in stock" filter
 
   useEffect(() => {
     async function loadDesserts() {
@@ -63,14 +64,14 @@ export default function DessertsPage() {
   useEffect(() => {
     // Apply filters whenever filters change
     const filtered = desserts.filter((dessert) => {
-      const matchesStock = dessert.stock > 0 // Replace available with stock > 0 logic
+      const matchesStock = !showInStockOnly || dessert.stock > 0; // Filter by stock if enabled
       const matchesCategory = selectedCategory === "all" || dessert.category === selectedCategory
       const matchesPrice = dessert.price >= priceRange[0] && dessert.price <= priceRange[1]
       const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => dessert.tags.includes(tag))
-      return matchesCategory && matchesPrice && matchesTags
+      return matchesStock && matchesCategory && matchesPrice && matchesTags
     })
     setFilteredDesserts(filtered)
-  }, [desserts, selectedCategory, priceRange, selectedTags])
+  }, [desserts, selectedCategory, priceRange, selectedTags, showInStockOnly]) // Add showInStockOnly to dependencies
 
   // Update the handleAddToCart function to handle weight
   const handleAddToCart = (dessert: Dessert) => {
@@ -83,14 +84,14 @@ export default function DessertsPage() {
       return
     }
 
-    const defaultWeight = typeof dessert.amount[0] === "string" ? parseFloat(dessert.amount[0]) : dessert.amount[0] || 1
+    const defaultWeight = typeof dessert.amount[0] === "string" ? parseFloat(dessert.amount[0]) : dessert.amount[0] || 0
 
     addItem({
       id: dessert.id,
       name: dessert.name,
       price: dessert.price,
       image: dessert.image,
-      quantity: 1,
+      quantity: 0,
       weight: defaultWeight,
     })
 
@@ -154,7 +155,7 @@ export default function DessertsPage() {
           <div className={`lg:w-1/4 ${showFilters ? "block" : "hidden lg:block"}`}>
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="font-semibold text-lg mb-4">קטגוריות</h2>
-              <div className="space-y-2 mb-6">
+              <div className="space-y-0 mb-6"> {/* Changed space-y-2 to space-y-1 */}
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -187,12 +188,30 @@ export default function DessertsPage() {
                 </div>
               </div>
 
+              {/* Add margin between price range and in-stock filter */}
+              <div className="mt-4 space-y-2 mb-6">
+                <div className="flex items-center gap-2"> {/* Changed gap-2 to gap-3 */}
+                  <Checkbox
+                    id="in-stock"
+                    checked={showInStockOnly}
+                    onCheckedChange={(checked) => setShowInStockOnly(checked === true)}
+                  />
+                  <label
+                    htmlFor="in-stock"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    זמין במלאי
+                  </label>
+                </div>
+              </div>
+
+              {/* Tags */}
               {allTags.length > 0 && (
-                <>
-                  <h2 className="font-semibold text-lg mt-6 mb-4">תגיות</h2>
-                  <div className="space-y-2">
-                    {allTags.map((tag) => (
-                      <div key={tag} className="flex items-center space-x-2">
+                <div className="space-y-2">
+                  {allTags
+                    .filter((tag) => tag.trim() !== "") // Filter out empty or whitespace-only tags
+                    .map((tag) => (
+                      <div key={tag} className="flex items-center gap-2">
                         <Checkbox
                           id={`tag-${tag}`}
                           checked={selectedTags.includes(tag)}
@@ -200,18 +219,17 @@ export default function DessertsPage() {
                         />
                         <label
                           htmlFor={`tag-${tag}`}
-                          className="text-sm font-medium leading-none mr-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
                           {tag}
                         </label>
                       </div>
                     ))}
-                  </div>
-                </>
+                </div>
               )}
             </div>
           </div>
-
+          
           {/* Product grid */}
           <div className="lg:w-3/4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
