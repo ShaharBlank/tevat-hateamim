@@ -43,7 +43,7 @@ export default function FeaturedDesserts() {
       price: dessert.price, // Price per kg
       image: dessert.image,
       quantity: 1,
-      weight: 0, // Default weight: 1kg
+      weight: 1, // Default weight: 1kg
     })
 
     toast({
@@ -105,10 +105,19 @@ export default function FeaturedDesserts() {
                   <p className="text-gray-600 text-sm mt-1">{dessert.description}</p>
                   <div className="mt-4 flex items-center justify-between">
                     <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
-                    <Button size="sm" onClick={() => handleAddToCart(dessert)} className="bg-primary hover:bg-primary/90">
-                      <ShoppingCartIcon className="h-4 w-4 ml-1" />
-                      הוסף לסל
-                    </Button>
+                    <div className="relative group">
+                      <Button 
+                        size="sm" 
+                        disabled
+                        className="bg-gray-400 cursor-not-allowed opacity-50"
+                      >
+                        <ShoppingCartIcon className="h-4 w-4 ml-1" />
+                        הוסף לסל
+                      </Button>
+                      <span className="absolute hidden group-hover:block bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                        בקרוב..
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

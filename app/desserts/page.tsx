@@ -265,17 +265,19 @@ export default function DessertsPage() {
                       ) : (
                         <span className="text-red-600 font-medium">אזל המלאי</span>
                       )}
-                      <Button
-                        size="sm"
-                        onClick={() => handleAddToCart(dessert)}
-                        disabled={dessert.stock === 0}
-                        className={`${
-                          dessert.stock === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-primary hover:bg-primary/90"
-                        }`}
-                      >
-                        <ShoppingCartIcon className="h-4 w-4 ml-1" />
-                        הוסף לסל
-                      </Button>
+                      <div className="relative group">
+                        <Button 
+                          size="sm" 
+                          disabled
+                          className="bg-gray-400 cursor-not-allowed opacity-50"
+                        >
+                          <ShoppingCartIcon className="h-4 w-4 ml-1" />
+                          הוסף לסל
+                        </Button>
+                        <span className="absolute hidden group-hover:block bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                          בקרוב..
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

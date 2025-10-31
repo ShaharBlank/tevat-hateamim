@@ -4,26 +4,26 @@ import Image from "next/image"
 const categories = [
   {
     id: "birthday",
-    name: "קינוחי יום הולדת",
+    name: "עוגות יום הולדת מעוצבות",
     description: "הפכו את החגיגה שלכם למיוחדת",
     image: "/placeholder.svg?height=300&width=300",
   },
   {
-    id: "wedding",
-    name: "קינוחי חתונה",
-    description: "עיצובים אלגנטיים ליום הגדול שלכם",
+    id: "cake-box",
+    name: "Cake-Box",
+    description: "הקינוח החדש שלנו",
     image: "/placeholder.svg?height=300&width=300",
   },
   {
-    id: "custom",
-    name: "קינוחים מותאמים אישית",
-    description: "מעוצבים במיוחד עבורכם",
+    id: "free",
+    name: "קינוחים ללא גלוטן/סוכר",
+    description: "בריא זה הטעים החדש",
     image: "/placeholder.svg?height=300&width=300",
   },
   {
-    id: "cupcakes",
-    name: "קאפקייקס",
-    description: "חטיפים מושלמים בגודל ביס",
+    id: "hosting",
+    name: "מגשי אירוח",
+    description: "שדרגו את האירוע שלכם",
     image: "/placeholder.svg?height=300&width=300",
   },
 ]

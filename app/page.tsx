@@ -15,7 +15,7 @@ export default function HomePage() {
         <section className="relative bg-gradient-to-b from-primary/20 to-background py-12">
           <div className="container mx-auto px-0 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="md:w-1/2 space-y-0">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">קינוחים מעוצבים לכל אירוע מיוחד</h1>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">קינוחים מעוצבים ומגשי אירוח</h1>
               <p className="text-xl text-muted-foreground">
                 אנו מתמחים ביצירת קינוחים מעוצבים ייחודיים לימי הולדת, חתונות, בר/בת מצווה וכל אירוע מיוחד.
               </p>
@@ -31,7 +31,7 @@ export default function HomePage() {
             <div className="md:w-1/2 relative">
               <div className="relative w-full aspect-square max-w-md mx-auto">
                 <Image
-                  src="/placeholder.svg?height=600&width=600"
+                  src="/images/logo.png"
                   alt="קינוח יום הולדת מעוצב"
                   fill
                   className="object-cover rounded-lg shadow-xl"
