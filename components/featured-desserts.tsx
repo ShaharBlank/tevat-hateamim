@@ -33,7 +33,7 @@ const DessertCard = ({ dessert, onImageClick, isNew = false, isPromo = false }: 
         {/* New badge */}
         {isNew && (
           <div className="absolute top-2 right-2">
-            <span className="px-2 py-1 bg-primary text-white text-xs rounded-full">
+            <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
               {t('featured.new.badge')}
             </span>
           </div>

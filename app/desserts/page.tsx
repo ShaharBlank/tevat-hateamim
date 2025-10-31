@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { toast } from "@/hooks/use-toast"
 import { useCart } from "@/lib/cart-context"
+import { useLanguage } from "@/lib/language-context"
 import { Dessert, getDesserts, getDessertCategories } from "@/lib/db-service"
 import Header from "@/components/header"
 import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog"
@@ -27,6 +28,7 @@ export default function DessertsPage() {
   const [showFilters, setShowFilters] = useState(false) // Ensure showFilters state is defined
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showInStockOnly, setShowInStockOnly] = useState(false); // Add state for "in stock" filter
+  const { t } = useLanguage() // Add language support
 
   useEffect(() => {
     async function loadDesserts() {
@@ -239,15 +241,20 @@ export default function DessertsPage() {
                 >
                   <div className="relative h-64 cursor-pointer" onClick={() => handleImageClick(dessert.image)}>
                     <Image src={dessert.image || "/placeholder.svg"} alt={dessert.name} fill className="object-cover" />
-                    {dessert.tags?.includes("חדש") && (
-                      <span className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                        חדש
-                      </span>
+                    {dessert.tags?.some((tag: string) => tag.includes("חדש")) && (
+                      <div className="absolute top-2 right-2">
+                        <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+                          {t('featured.new.badge')}
+                        </span>
+                      </div>
                     )}
-                    {dessert.tags?.includes("הנמכר ביותר") && (
-                      <span className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
-                        הנמכר ביותר
-                      </span>
+                    {dessert.tags?.some((tag: string) => tag.includes("מבצע")) && (
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                          {t('featured.promo.badge')}
+                        </span>
+                      </div>
+                    )}
                     )}
                   </div>
                   <div className="p-4">
