@@ -15,14 +15,24 @@ export default function FeaturedDesserts() {
   const { toast: showToast } = useToast()
   const { addItem } = useCart()
   const [featuredDesserts, setFeaturedDesserts] = useState<Dessert[]>([])
+  const [saleDesserts, setSaleDesserts] = useState<Dessert[]>([])
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   useEffect(() => {
     const loadFeaturedDesserts = async () => {
       try {
         const fetchedDesserts = await getDesserts()
-        const bestSellers = fetchedDesserts.filter((dessert) => dessert.tags.includes("רב מכר"))
-        setFeaturedDesserts(bestSellers)
+        // Select desserts with any tag that includes the substring "חדש"
+        const newDesserts = fetchedDesserts.filter((dessert) =>
+          Array.isArray(dessert.tags) && dessert.tags.some((tag) => tag.includes("חדש"))
+        )
+        setFeaturedDesserts(newDesserts)
+
+        // Also select desserts that have any tag including the substring "מבצע" for promotions
+        const promos = fetchedDesserts.filter((dessert) =>
+          Array.isArray(dessert.tags) && dessert.tags.some((tag) => tag.includes("מבצע"))
+        )
+        setSaleDesserts(promos)
       } catch (error) {
         console.error("Error loading featured desserts:", error)
         showToast({
@@ -66,18 +76,7 @@ export default function FeaturedDesserts() {
     <section className="py-16">
       <div className="container px-4 mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12">
-          <h2 className="text-3xl font-bold">קינוחים מומלצים</h2>
-          <div className="mt-4 md:mt-0 flex gap-2">
-            <Button variant="outline" className="text-sm">
-              כל הקינוחים
-            </Button>
-            <Button variant="outline" className="text-sm">
-              הנמכרים ביותר
-            </Button>
-            <Button variant="outline" className="text-sm">
-              חדש במלאי
-            </Button>
-          </div>
+          <h2 className="text-3xl font-bold">חדש על המדף!</h2>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -123,6 +122,58 @@ export default function FeaturedDesserts() {
               </div>
             ))
           )}
+        </div>
+
+        {/* Promotions section - מבצעים */}
+        <div className="mt-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold">מבצעים</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {saleDesserts.length === 0 ? (
+              <p className="text-center col-span-full">לא נמצאו מבצעים</p>
+            ) : (
+              saleDesserts.map((dessert) => (
+                <div
+                  key={`sale-${dessert.id}`}
+                  className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                >
+                  <div
+                    className="relative h-64 cursor-pointer"
+                    onClick={() => handleImageClick(dessert.image)}
+                  >
+                    <Image
+                      src={dessert.image || "/placeholder.svg"}
+                      alt={dessert.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg">{dessert.name}</h3>
+                    <p className="text-gray-600 text-sm mt-1">{dessert.description}</p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="font-bold text-lg">₪{dessert.price.toFixed(2)}/ק"ג</span>
+                      <div className="relative group">
+                        <Button 
+                          size="sm" 
+                          disabled
+                          className="bg-gray-400 cursor-not-allowed opacity-50"
+                        >
+                          <ShoppingCartIcon className="h-4 w-4 ml-1" />
+                          הוסף לסל
+                        </Button>
+                        <span className="absolute hidden group-hover:block bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                          בקרוב..
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* Modal for enlarged image */}
