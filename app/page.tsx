@@ -15,18 +15,33 @@ export default function HomePage() {
       <Header />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-b from-primary/20 to-background py-12">
-          <div className="container mx-auto px-0 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="md:w-1/2 space-y-0">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{t('hero.title')}</h1>
-              <p className="text-xl text-muted-foreground">
+        <section className="relative bg-gradient-to-b from-primary/20 to-background py-12 overflow-hidden">
+          {/* Background Video */}
+          <video
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            src="/videos/background_video.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+          {/* Overlay (optional subtle dark layer for readability) */}
+          <div className="absolute inset-0 bg-black/30 z-0" />
+
+          {/* Content */}
+          <div className="relative z-10 container mx-auto px-0 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="md:w-1/2 space-y-0 text-white">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight drop-shadow-md">
+                {t('hero.title')}
+              </h1>
+              <p className="text-xl text-white/90 drop-shadow-sm">
                 {t('hero.desc')}
               </p>
               <div className="flex flex-wrap gap-0">
                 <Button size="lg" asChild>
                   <Link href="/desserts">{t('hero.orderNow')}</Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
+                <Button size="lg" variant="outline" asChild className="text-black">
                   <Link href="/contact">{t('hero.contact')}</Link>
                 </Button>
               </div>
@@ -37,7 +52,7 @@ export default function HomePage() {
                   src="/images/logo.png"
                   alt={t('hero.title')}
                   fill
-                  className="object-cover rounded-lg shadow-xl"
+                  className="object-contain opacity-60 scale-90 drop-shadow-lg transition-all duration-500"
                   priority
                 />
               </div>
@@ -62,4 +77,3 @@ export default function HomePage() {
     </div>
   )
 }
-
