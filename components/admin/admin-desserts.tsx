@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon, PencilIcon, TrashIcon } from "lucide-react"
@@ -58,6 +59,8 @@ export default function AdminDesserts() {
     amount: [] as string[], // ערכים אפשריים (משקלים או יחידות)
     newAmount: "",
     isweight: true,
+    isNew: false,
+    isPromo: false,
   })
 
   useEffect(() => {
@@ -229,6 +232,8 @@ export default function AdminDesserts() {
       amount: [], // Reset weights
       newAmount: "", // Reset new weight
       isweight: true,
+      isNew: false,
+      isPromo: false,
     })
     setSelectedImageFile(null)
     setImagePreview(null)
@@ -371,7 +376,15 @@ export default function AdminDesserts() {
         price: price,
         image: imageUrl,
         category: formData.category,
-        tags: formData.tags.split(",").map((tag) => tag.trim()),
+        tags: (() => {
+          const base = formData.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+          if (formData.isNew && !base.includes("חדש")) base.push("חדש")
+          if (formData.isPromo && !base.includes("מבצע")) base.push("מבצע")
+          return base
+        })(),
         leadtime: leadtime,
         stock: Number(formData.stock),
         amount: formData.amount,
@@ -455,7 +468,30 @@ export default function AdminDesserts() {
         price: price,
         image: imageUrl,
         category: formData.category,
-        tags: formData.tags.split(",").map((tag) => tag.trim()),
+        tags: (() => {
+          // start from user-entered tags
+          let base = formData.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+
+          // If the 'חדש' checkbox is checked, ensure a tag containing 'חדש' exists;
+          // otherwise remove any tags that include 'חדש'
+          if (formData.isNew) {
+            if (!base.some((t) => t.includes("חדש"))) base.push("חדש")
+          } else {
+            base = base.filter((t) => !t.includes("חדש"))
+          }
+
+          // Same for 'מבצע'
+          if (formData.isPromo) {
+            if (!base.some((t) => t.includes("מבצע"))) base.push("מבצע")
+          } else {
+            base = base.filter((t) => !t.includes("מבצע"))
+          }
+
+          return base
+        })(),
         leadtime: formData.leadtime ? Number.parseInt(formData.leadtime) : null,
         stock: Number(formData.stock),
         amount: formData.amount,
@@ -526,6 +562,8 @@ export default function AdminDesserts() {
       amount: dessert.amount || [],
       newAmount: "",
       isweight: dessert.isweight,
+      isNew: Array.isArray(dessert.tags) ? dessert.tags.some((t) => t === "חדש" || t.includes("חדש")) : false,
+      isPromo: Array.isArray(dessert.tags) ? dessert.tags.some((t) => t === "מבצע" || t.includes("מבצע")) : false,
     })
     setImagePreview(dessert.image)
     setIsEditDialogOpen(true)
@@ -731,6 +769,25 @@ export default function AdminDesserts() {
                           placeholder="תגיות מופרדות בפסיקים"
                           dir="rtl"
                         />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>תכונות מיוחדות</Label>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!formData.isNew}
+                              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isNew: !!checked }))}
+                            />
+                            <span>חדש על המדף?</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!formData.isPromo}
+                              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isPromo: !!checked }))}
+                            />
+                            <span>מבצע?</span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1020,6 +1077,25 @@ export default function AdminDesserts() {
                   placeholder="תגיות מופרדות בפסיקים"
                   dir="rtl"
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label>תכונות מיוחדות</Label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <Checkbox
+                      checked={!!formData.isNew}
+                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isNew: !!checked }))}
+                    />
+                    <span>חדש על המדף?</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <Checkbox
+                      checked={!!formData.isPromo}
+                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isPromo: !!checked }))}
+                    />
+                    <span>מבצע?</span>
+                  </label>
+                </div>
               </div>
             </div>
           <DialogFooter>
