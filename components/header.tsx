@@ -7,6 +7,7 @@ import { ShoppingCartIcon, UserIcon, MenuIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 import { useCart } from "@/lib/cart-context"
+import { useLanguage } from "@/lib/language-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const { items } = useCart()
+  const { lang, setLang, t } = useLanguage()
   const [notifications, setNotifications] = useState<any[]>([])
   const [hasUnread, setHasUnread] = useState(false)
   const [hasPendingOrders, setHasPendingOrders] = useState(false)
@@ -91,6 +93,16 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
+          {/* Language switcher */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLang(lang === "he" ? "ru" : "he")}
+            className="text-sm font-medium"
+          >
+            {lang === "he" ? "Русский" : "עברית"}
+          </Button>
+
           <div className="relative group">
             <Button 
               variant="ghost" 
@@ -101,7 +113,7 @@ export default function Header() {
               <ShoppingCartIcon className="h-6 w-6" />
             </Button>
             <span className="absolute hidden group-hover:block right-0 mt-2 px-2 py-1 bg-gray-900 text-white text-sm rounded whitespace-nowrap">
-              בקרוב..
+              {t('featured.comingSoon')}
             </span>
           </div>
 

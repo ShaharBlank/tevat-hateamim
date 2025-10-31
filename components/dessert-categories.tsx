@@ -1,39 +1,22 @@
 import Link from "next/link"
 import Image from "next/image"
+import { useLanguage } from "@/lib/language-context"
 
-const categories = [
-  {
-    id: "birthday",
-    name: "עוגות יום הולדת מעוצבות",
-    description: "הפכו את החגיגה שלכם למיוחדת",
-    image: "/placeholder.svg?height=300&width=300",
-  },
-  {
-    id: "cake-box",
-    name: "Cake-Box",
-    description: "הקינוח החדש שלנו",
-    image: "/placeholder.svg?height=300&width=300",
-  },
-  {
-    id: "free",
-    name: "קינוחים ללא גלוטן/סוכר",
-    description: "בריא זה הטעים החדש",
-    image: "/placeholder.svg?height=300&width=300",
-  },
-  {
-    id: "hosting",
-    name: "מגשי אירוח",
-    description: "שדרגו את האירוע שלכם",
-    image: "/placeholder.svg?height=300&width=300",
-  },
+const items = [
+  { id: "birthday", image: "/placeholder.svg?height=300&width=300" },
+  { id: "cakebox", image: "/placeholder.svg?height=300&width=300" },
+  { id: "free", image: "/placeholder.svg?height=300&width=300" },
+  { id: "hosting", image: "/placeholder.svg?height=300&width=300" },
 ]
 
 export default function DessertCategories() {
+  const { t } = useLanguage()
+
   return (
     <section className="py-16">
       <div className="container px-4 mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {categories.map((category) => (
+          {items.map((category) => (
             <Link
               key={category.id}
               href="/desserts"
@@ -42,14 +25,14 @@ export default function DessertCategories() {
               <div className="relative h-64 overflow-hidden">
                 <Image
                   src={category.image || "/placeholder.svg"}
-                  alt={category.name}
+                  alt={t(`categories.${category.id}.name`)}
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                  <h3 className="text-xl font-semibold">{category.name}</h3>
-                  <p className="mt-1 text-sm text-gray-200">{category.description}</p>
+                  <h3 className="text-xl font-semibold">{t(`categories.${category.id}.name`)}</h3>
+                  <p className="mt-1 text-sm text-gray-200">{t(`categories.${category.id}.desc`)}</p>
                 </div>
               </div>
             </Link>
