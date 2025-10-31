@@ -255,7 +255,6 @@ export default function DessertsPage() {
                         </span>
                       </div>
                     )}
-                    )}
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-lg">{dessert.name}</h3>
