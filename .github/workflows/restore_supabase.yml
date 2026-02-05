@@ -1,15 +1,24 @@
 name: Daily SupaBase Restore-Project API call
+
 on:
   schedule:
-    - cron: "*/15 * * * *"   # each 15 minutes
+    - cron: "*/15 * * * *"   # every 15 minutes
   workflow_dispatch:
+
+# Prevent backlog: keep only the latest run
+concurrency:
+  group: supabase-restore
+  cancel-in-progress: true
 
 jobs:
   call_api:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Call SupaBase API
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
-          curl -X POST "https://api.supabase.com/v1/projects/kteccplzqdqymrhhyxsw/restore" -H "Authorization: Bearer $API_KEY"
+          set -euo pipefail
+          curl -fsS -X POST "https://api.supabase.com/v1/projects/kteccplzqdqymrhhyxsw/restore" \
+            -H "Authorization: Bearer $API_KEY"
